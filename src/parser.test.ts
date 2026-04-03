@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { EmailParser } from './parser.js';
+import { EmailParser } from './parser';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 

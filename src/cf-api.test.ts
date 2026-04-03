@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { CFEmailClient, type HttpClient } from './cf-api.js';
-import { AuthError, NetworkError, NotFoundError, RateLimitError, RelayTempMailError } from './errors.js';
+import { CFEmailClient, type HttpClient } from './cf-api';
+import { AuthError, NetworkError, NotFoundError, RateLimitError, RelayTempMailError } from './errors';
 
 describe('CFEmailClient', () => {
   const apiUrl = 'https://example.com';
