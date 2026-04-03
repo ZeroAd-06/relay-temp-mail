@@ -1,0 +1,7 @@
+From: sender@example.com
+To: t1ou9gl4l@mozmail.com
+Subject: Test Email
+Message-Id: <abc123@example.com>
+Date: Fri, 03 Apr 2026 17:12:55 +0000
+
+Test email body
