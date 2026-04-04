@@ -39,8 +39,11 @@ export class RelayAPIClient {
 
   private getAuthHeaders(): Record<string, string> {
     return {
+      'Origin': 'https://relay.firefox.com',
+      'Referer': 'https://relay.firefox.com/accounts/profile/?',
+      'Accept': 'application/json',
       'X-CSRFToken': this.csrfToken,
-      'Cookie': `sessionid=${this.sessionId}`,
+      'Cookie': `sessionid=${this.sessionId}; csrftoken=${this.csrfToken}`,
     };
   }
 
@@ -58,7 +61,10 @@ export class RelayAPIClient {
     const response = await this.httpClient.request<RawAliasResponse>(
       'POST',
       '/api/v1/relayaddresses/',
-      { headers: this.getAuthHeaders() }
+      {
+        headers: this.getAuthHeaders(),
+        body: { enabled: true },
+      }
     );
 
     return this.mapAliasResponse(response);
