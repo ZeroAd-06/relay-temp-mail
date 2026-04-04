@@ -2,28 +2,28 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-A TypeScript/JavaScript package for managing Firefox Relay email aliases and retrieving temporary emails via a CloudFlare temp email API.
+一个用于管理 Firefox Relay 邮箱别名和通过 Cloudflare 临时邮箱 API 接收邮件的 TypeScript/JavaScript 包。
 
-## Features
+## 功能特性
 
-- **Create Firefox Relay aliases** - Generate new email aliases on demand
-- **List existing aliases** - View all your configured email aliases
-- **Get emails for specific aliases** - Fetch and parse emails sent to specific addresses
-- **Delete aliases** - Clean up unused aliases programmatically
-- **TypeScript support** - Full type definitions for all APIs
-- **ESM + CommonJS support** - Works with both module systems
+- **创建 Firefox Relay 别名** - 按需生成新的邮箱别名
+- **列出已有别名** - 查看所有已配置的邮箱别名
+- **获取指定别名的邮件** - 获取并解析发送到特定地址的邮件
+- **删除别名** - 以编程方式清理未使用的别名
+- **TypeScript 支持** - 所有 API 都有完整的类型定义
+- **支持 ESM + CommonJS** - 兼容两种模块系统
 
-## Installation
+## 安装
 
 ```bash
 npm install relay-temp-mail
-# or
+# 或
 pnpm add relay-temp-mail
-# or
+# 或
 bun add relay-temp-mail
 ```
 
-## Quick Start
+## 快速开始
 
 ```typescript
 import { RelayClient } from 'relay-temp-mail';
@@ -35,30 +35,30 @@ const client = new RelayClient({
   cfToken: 'your-cf-token',
 });
 
-// Create a new alias
+// 创建新别名
 const alias = await client.createAlias();
-console.log('New alias:', alias.fullAddress);
+console.log('新别名:', alias.fullAddress);
 
-// List all aliases
+// 列出所有别名
 const aliases = await client.listAliases();
 
-// Get emails for a specific alias
+// 获取指定别名的邮件
 const emails = await client.getEmails(alias.fullAddress, { limit: 10 });
 ```
 
-## Configuration
+## 配置
 
-### Firefox Relay Tokens
+### Firefox Relay Token
 
-To get your `csrfToken` and `sessionId`:
+获取 `csrfToken` 和 `sessionId` 的方法：
 
-1. Login to [relay.firefox.com](https://relay.firefox.com)
-2. Open your browser's developer tools (F12)
-3. Go to the Application/Storage tab
-4. Find Cookies for `relay.firefox.com`
-5. Copy the values for `csrftoken` and `sessionid`
+1. 登录 [relay.firefox.com](https://relay.firefox.com)
+2. 打开浏览器开发者工具 (F12)
+3. 切换到 Application/Storage 标签页
+4. 找到 `relay.firefox.com` 的 Cookies
+5. 复制 `csrftoken` 和 `sessionid` 的值
 
-### CF Temp Email
+### CF 临时邮箱
 
 本项目使用 [cloudflare_temp_email](https://github.com/dreamhunter2333/cloudflare_temp_email) 作为临时邮箱后端，你需要先部署该服务才能使用。
 
@@ -96,48 +96,48 @@ const client = new RelayClient({
 
 更多详细配置请参考 [cloudflare_temp_email 官方文档](https://temp-mail-docs.awsl.uk)。
 
-## API Documentation
+## API 文档
 
 ### RelayClient
 
-The main class for interacting with both Firefox Relay and CloudFlare temp email services.
+用于与 Firefox Relay 和 Cloudflare 临时邮箱服务交互的主类。
 
-#### Constructor Options
+#### 构造函数选项
 
 ```typescript
 interface RelayConfig {
   csrfToken: string;    // Firefox Relay CSRF token
   sessionId: string;    // Firefox Relay session ID
-  cfApiUrl: string;     // CloudFlare temp email API URL
-  cfToken: string;      // CloudFlare API token
-  timeout?: number;     // Request timeout in ms (default: 30000)
+  cfApiUrl: string;     // Cloudflare 临时邮箱 API 地址
+  cfToken: string;      // Cloudflare API token
+  timeout?: number;     // 请求超时时间，毫秒（默认: 30000）
 }
 ```
 
-#### Methods
+#### 方法
 
 ##### `listAliases()`
 
-Lists all Firefox Relay email aliases.
+列出所有 Firefox Relay 邮箱别名。
 
 ```typescript
 const aliases = await client.listAliases();
-// Returns: RelayAlias[]
+// 返回: RelayAlias[]
 ```
 
 ##### `createAlias()`
 
-Creates a new random Firefox Relay email alias.
+创建一个新的随机 Firefox Relay 邮箱别名。
 
 ```typescript
 const alias = await client.createAlias();
-// Returns: RelayAlias
-console.log(alias.fullAddress); // e.g., "random123@mozmail.com"
+// 返回: RelayAlias
+console.log(alias.fullAddress); // 例如: "random123@mozmail.com"
 ```
 
 ##### `deleteAlias(id)`
 
-Deletes an alias by its ID.
+根据 ID 删除别名。
 
 ```typescript
 await client.deleteAlias(12345);
@@ -145,27 +145,27 @@ await client.deleteAlias(12345);
 
 ##### `getEmails(aliasAddress?, options?)`
 
-Retrieves and parses emails from the CloudFlare temp email API. If `aliasAddress` is provided, only emails sent to that address are returned.
+从 Cloudflare 临时邮箱 API 检索和解析邮件。如果提供了 `aliasAddress`，则只返回发送到该地址的邮件。
 
 ```typescript
-// Get all emails (up to default limit)
+// 获取所有邮件（默认数量限制）
 const allEmails = await client.getEmails();
 
-// Get emails for a specific alias
+// 获取指定别名的邮件
 const emails = await client.getEmails('alias@mozmail.com', { limit: 10 });
 
-// With pagination
+// 分页获取
 const page2 = await client.getEmails('alias@mozmail.com', { limit: 10, offset: 10 });
 ```
 
-Options:
+选项：
 
-- `limit` - Maximum number of emails to return (default: 20)
-- `offset` - Offset for pagination, 0-indexed (default: 0)
+- `limit` - 返回的最大邮件数量（默认: 20）
+- `offset` - 分页偏移量，从 0 开始（默认: 0）
 
-## Error Handling
+## 错误处理
 
-The package exports several error classes for handling different failure scenarios:
+本包导出了多个错误类，用于处理不同的失败场景：
 
 ```typescript
 import {
@@ -181,37 +181,37 @@ try {
   const alias = await client.createAlias();
 } catch (error) {
   if (error instanceof AuthError) {
-    console.error('Authentication failed:', error.message);
+    console.error('认证失败:', error.message);
   } else if (error instanceof NetworkError) {
-    console.error('Network problem:', error.message);
+    console.error('网络问题:', error.message);
   } else if (error instanceof RateLimitError) {
-    console.error('Rate limited. Retry after:', error.response?.retryAfter);
+    console.error('请求过于频繁，请稍后重试:', error.response?.retryAfter);
   } else if (error instanceof RelayTempMailError) {
-    console.error('Relay error:', error.code, error.message);
+    console.error('Relay 错误:', error.code, error.message);
   }
 }
 ```
 
-### Error Classes
+### 错误类
 
-| Class | Description | Status Code |
-|-------|-------------|-------------|
-| `RelayTempMailError` | Base error class for all package errors | - |
-| `NetworkError` | Network connectivity issues | - |
-| `AuthError` | Authentication or authorization failures | 401/403 |
-| `NotFoundError` | Requested resource not found | 404 |
-| `ParseError` | Email MIME parsing failures | - |
-| `RateLimitError` | API rate limit exceeded | 429 |
+| 类名 | 描述 | 状态码 |
+|------|------|--------|
+| `RelayTempMailError` | 所有包错误的基类 | - |
+| `NetworkError` | 网络连接问题 | - |
+| `AuthError` | 认证或授权失败 | 401/403 |
+| `NotFoundError` | 请求的资源不存在 | 404 |
+| `ParseError` | 邮件 MIME 解析失败 | - |
+| `RateLimitError` | API 请求频率限制 exceeded | 429 |
 
-All error classes extend `RelayTempMailError` and provide:
+所有错误类都继承自 `RelayTempMailError`，并提供以下属性：
 
-- `code` - Machine-readable error code
-- `statusCode` - HTTP status code (if applicable)
-- `response` - Raw response data from the API (if available)
+- `code` - 机器可读的错误代码
+- `statusCode` - HTTP 状态码（如适用）
+- `response` - API 返回的原始响应数据（如可用）
 
 ## TypeScript
 
-All types are fully exported for use in your TypeScript projects:
+所有类型都已导出，可在 TypeScript 项目中使用：
 
 ```typescript
 import type {
@@ -224,8 +224,8 @@ import type {
 } from 'relay-temp-mail';
 ```
 
-The package is built with strict TypeScript settings and provides comprehensive type definitions for all APIs.
+本包使用严格的 TypeScript 设置构建，为所有 API 提供全面的类型定义。
 
-## License
+## 许可证
 
 MIT
