@@ -10,6 +10,13 @@ describe('RelayAPIClient', () => {
 
   const csrfToken = 'test-csrf-token';
   const sessionId = 'test-session-id';
+  const expectedHeaders = {
+    'Origin': 'https://relay.firefox.com',
+    'Referer': 'https://relay.firefox.com/accounts/profile/?',
+    'Accept': 'application/json',
+    'X-CSRFToken': csrfToken,
+    'Cookie': `sessionid=${sessionId}; csrftoken=${csrfToken}`,
+  };
 
   beforeEach(() => {
     originalFetch = global.fetch;
@@ -87,10 +94,7 @@ describe('RelayAPIClient', () => {
         'GET',
         '/api/v1/relayaddresses/',
         {
-          headers: {
-            'X-CSRFToken': csrfToken,
-            'Cookie': `sessionid=${sessionId}`,
-          },
+          headers: expectedHeaders,
         }
       );
     });
@@ -195,10 +199,8 @@ describe('RelayAPIClient', () => {
         'POST',
         '/api/v1/relayaddresses/',
         {
-          headers: {
-            'X-CSRFToken': csrfToken,
-            'Cookie': `sessionid=${sessionId}`,
-          },
+          headers: expectedHeaders,
+          body: { enabled: true },
         }
       );
     });
@@ -228,10 +230,7 @@ describe('RelayAPIClient', () => {
         'DELETE',
         '/api/v1/relayaddresses/17901547/',
         {
-          headers: {
-            'X-CSRFToken': csrfToken,
-            'Cookie': `sessionid=${sessionId}`,
-          },
+          headers: expectedHeaders,
         }
       );
     });

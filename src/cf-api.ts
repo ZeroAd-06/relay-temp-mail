@@ -89,7 +89,7 @@ export class CFEmailClient {
    * @param httpClient - Optional HTTP client (defaults to fetch-based implementation)
    */
   constructor(apiUrl: string, token: string, httpClient?: HttpClient) {
-    this.apiUrl = apiUrl;
+    this.apiUrl = apiUrl.replace(/\/+$/, '');
     this.token = token;
     this.httpClient = httpClient ?? new DefaultHttpClient();
   }

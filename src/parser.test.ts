@@ -41,7 +41,7 @@ Subject: Test
 Body`;
 
       const alias = parser.extractRelayAlias(raw);
-      expect(alias).toBeNull();
+      expect(alias).toBe('recipient@other.com');
     });
 
     it('handles quoted-printable encoding in To header', () => {
@@ -89,6 +89,17 @@ Body`;
 
       const alias = parser.extractRelayAlias(raw);
       expect(alias).toBeNull();
+    });
+
+    it('extracts custom-domain aliases from To header', () => {
+      const raw = `From: sender@example.com
+To: tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org
+Subject: Test
+
+Body`;
+
+      const alias = parser.extractRelayAlias(raw);
+      expect(alias).toBe('tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org');
     });
   });
 
@@ -163,7 +174,7 @@ Message-Id: <msg123@example.com>
 Body`;
 
       const parsed = parser.parseEmail(raw);
-      expect(parsed.relayAlias).toBeUndefined();
+      expect(parsed.relayAlias).toBe('normal@example.com');
     });
   });
 

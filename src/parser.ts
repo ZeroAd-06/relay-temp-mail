@@ -3,7 +3,8 @@
  */
 import type { ParsedEmail } from './types.js';
 
-const MOZMAIL_PATTERN = /[a-zA-Z0-9]+@mozmail\.com/g;
+const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+const MOZMAIL_SUFFIX_PATTERN = /@mozmail\.com$/i;
 const ENCODED_WORD_PATTERN = /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g;
 
 /**
@@ -36,8 +37,14 @@ export class EmailParser {
       if (!toHeader) return null;
       
       const decodedTo = this.decodeHeader(toHeader);
-      const matches = decodedTo.match(MOZMAIL_PATTERN);
-      return matches && matches.length > 0 ? matches[0].toLowerCase() : null;
+      const matches = decodedTo.match(EMAIL_PATTERN);
+      if (!matches || matches.length === 0) return null;
+
+      const normalizedAddresses = matches.map((match) => match.toLowerCase());
+      return (
+        normalizedAddresses.find((address) => MOZMAIL_SUFFIX_PATTERN.test(address)) ??
+        normalizedAddresses[0]
+      );
     } catch {
       return null;
     }

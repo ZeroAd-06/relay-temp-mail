@@ -131,7 +131,9 @@ export class RelayClient {
     if (aliasAddress) {
       const normalizedAlias = aliasAddress.toLowerCase();
       return parsedEmails.filter(
-        (email) => email.relayAlias?.toLowerCase() === normalizedAlias
+        (email) =>
+          email.relayAlias?.toLowerCase() === normalizedAlias ||
+          email.address.toLowerCase() === normalizedAlias
       );
     }
 

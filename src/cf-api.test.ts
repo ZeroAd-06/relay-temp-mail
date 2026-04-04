@@ -81,6 +81,22 @@ describe('CFEmailClient', () => {
       expect(calledUrl).toContain('offset=10');
     });
 
+    it('normalizes trailing slashes in apiUrl before requesting mails', async () => {
+      const trailingSlashClient = new CFEmailClient('https://example.com/', token, mockHttpClient);
+      mockGet.mockResolvedValueOnce({ results: [], count: 0 });
+
+      await trailingSlashClient.getMails();
+
+      expect(mockGet).toHaveBeenCalledWith(
+        'https://example.com/api/mails?limit=20&offset=0',
+        {
+          headers: {
+            Authorization: 'Bearer test-token',
+          },
+        }
+      );
+    });
+
     it('throws AuthError on 401', async () => {
       const error = new RelayTempMailError('Unauthorized', 'HTTP_ERROR', 401, 'Unauthorized');
       mockGet.mockRejectedValueOnce(error);

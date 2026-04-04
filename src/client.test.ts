@@ -173,6 +173,25 @@ describe('RelayClient', () => {
       expect(result).toHaveLength(1);
     });
 
+    it('with aliasAddress falls back to api address when relayAlias is missing', async () => {
+      const email = createMockEmail({
+        id: 1,
+        address: 'tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org',
+        raw: 'To: tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org\nFrom: sender@example.com\nSubject: Test\n\nBody',
+      });
+      mockCfApi.getMails.mockResolvedValue([email]);
+
+      mockParser.parseEmail.mockReturnValue({
+        ...email,
+        relayAlias: undefined,
+      });
+
+      const result = await client.getEmails('tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].address).toBe('tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org');
+    });
+
     it('passes pagination options', async () => {
       mockCfApi.getMails.mockResolvedValue([]);
       mockParser.parseEmail.mockReturnValue({
