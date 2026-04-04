@@ -33,18 +33,16 @@ export class EmailParser {
   extractRelayAlias(raw: string): string | null {
     try {
       const headers = this.parseHeaders(raw);
-      const toHeader = headers.get('to');
-      if (!toHeader) return null;
-      
-      const decodedTo = this.decodeHeader(toHeader);
-      const matches = decodedTo.match(EMAIL_PATTERN);
-      if (!matches || matches.length === 0) return null;
+      const fromAddresses = this.extractHeaderEmails(headers.get('from'));
+      const toAddresses = this.extractHeaderEmails(headers.get('to'));
+      const allAddresses = [...fromAddresses, ...toAddresses];
 
-      const normalizedAddresses = matches.map((match) => match.toLowerCase());
-      return (
-        normalizedAddresses.find((address) => MOZMAIL_SUFFIX_PATTERN.test(address)) ??
-        normalizedAddresses[0]
+      const mozmailAddress = allAddresses.find((address) =>
+        MOZMAIL_SUFFIX_PATTERN.test(address)
       );
+      if (mozmailAddress) return mozmailAddress;
+
+      return toAddresses[0] ?? null;
     } catch {
       return null;
     }
@@ -112,6 +110,13 @@ export class EmailParser {
     if (bracketMatch) return bracketMatch[1].trim().toLowerCase();
     const emailMatch = decoded.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
     return emailMatch ? emailMatch[0].toLowerCase() : decoded.trim().toLowerCase();
+  }
+
+  private extractHeaderEmails(headerValue?: string): string[] {
+    if (!headerValue) return [];
+    const decoded = this.decodeHeader(headerValue);
+    const matches = decoded.match(EMAIL_PATTERN);
+    return matches ? matches.map((match) => match.toLowerCase()) : [];
   }
 
   private extractMessageId(headerValue: string): string {

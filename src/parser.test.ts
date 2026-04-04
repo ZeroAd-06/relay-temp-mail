@@ -101,6 +101,17 @@ Body`;
       const alias = parser.extractRelayAlias(raw);
       expect(alias).toBe('tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org');
     });
+
+    it('prefers mozmail alias from Relay From header over custom-domain To header', () => {
+      const raw = `From: "otp@tm1.openai.com [via Relay]" <ptnzsk1t7@mozmail.com>
+To: tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org
+Subject: Test
+
+Body`;
+
+      const alias = parser.extractRelayAlias(raw);
+      expect(alias).toBe('ptnzsk1t7@mozmail.com');
+    });
   });
 
   describe('parseEmail', () => {
@@ -175,6 +186,19 @@ Body`;
 
       const parsed = parser.parseEmail(raw);
       expect(parsed.relayAlias).toBe('normal@example.com');
+    });
+
+    it('parses relay-forwarded email with mozmail alias in From header', () => {
+      const raw = `From: "otp@tm1.openai.com [via Relay]" <ptnzsk1t7@mozmail.com>
+To: tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org
+Subject: Test
+Message-Id: <relay@example.com>
+
+Body`;
+
+      const parsed = parser.parseEmail(raw);
+      expect(parsed.address).toBe('tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org');
+      expect(parsed.relayAlias).toBe('ptnzsk1t7@mozmail.com');
     });
   });
 
