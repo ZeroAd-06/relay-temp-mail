@@ -1,18 +1,18 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { CFEmailClient, type HttpClient } from './cf-api';
+import { CFTempMailProvider, type HttpClient } from './cf-api';
 import { AuthError, NetworkError, NotFoundError, RateLimitError, RelayTempMailError } from './errors';
 
-describe('CFEmailClient', () => {
+describe('CFTempMailProvider', () => {
   const apiUrl = 'https://example.com';
   const token = 'test-token';
   let mockGet: Mock;
   let mockHttpClient: HttpClient;
-  let client: CFEmailClient;
+  let provider: CFTempMailProvider;
 
   beforeEach(() => {
     mockGet = vi.fn();
     mockHttpClient = { get: mockGet };
-    client = new CFEmailClient(apiUrl, token, mockHttpClient);
+    provider = new CFTempMailProvider(apiUrl, token, mockHttpClient);
   });
 
   describe('getMails', () => {
@@ -32,7 +32,7 @@ describe('CFEmailClient', () => {
 
       mockGet.mockResolvedValueOnce(mockResponse);
 
-      const emails = await client.getMails();
+      const emails = await provider.getMails();
 
       expect(emails).toHaveLength(1);
       expect(emails[0]).toEqual({
@@ -49,7 +49,7 @@ describe('CFEmailClient', () => {
     it('sends correct Authorization header', async () => {
       mockGet.mockResolvedValueOnce({ results: [], count: 0 });
 
-      await client.getMails();
+      await provider.getMails();
 
       expect(mockGet).toHaveBeenCalledWith(
         expect.stringContaining('/api/mails'),
@@ -64,7 +64,7 @@ describe('CFEmailClient', () => {
     it('sends correct query params with defaults', async () => {
       mockGet.mockResolvedValueOnce({ results: [], count: 0 });
 
-      await client.getMails();
+      await provider.getMails();
 
       const calledUrl = mockGet.mock.calls[0][0];
       expect(calledUrl).toContain('limit=20');
@@ -74,7 +74,7 @@ describe('CFEmailClient', () => {
     it('sends correct query params with custom values', async () => {
       mockGet.mockResolvedValueOnce({ results: [], count: 0 });
 
-      await client.getMails(50, 10);
+      await provider.getMails(50, 10);
 
       const calledUrl = mockGet.mock.calls[0][0];
       expect(calledUrl).toContain('limit=50');
@@ -82,10 +82,10 @@ describe('CFEmailClient', () => {
     });
 
     it('normalizes trailing slashes in apiUrl before requesting mails', async () => {
-      const trailingSlashClient = new CFEmailClient('https://example.com/', token, mockHttpClient);
+      const trailingSlashProvider = new CFTempMailProvider('https://example.com/', token, mockHttpClient);
       mockGet.mockResolvedValueOnce({ results: [], count: 0 });
 
-      await trailingSlashClient.getMails();
+      await trailingSlashProvider.getMails();
 
       expect(mockGet).toHaveBeenCalledWith(
         'https://example.com/api/mails?limit=20&offset=0',
@@ -101,34 +101,40 @@ describe('CFEmailClient', () => {
       const error = new RelayTempMailError('Unauthorized', 'HTTP_ERROR', 401, 'Unauthorized');
       mockGet.mockRejectedValueOnce(error);
 
-      await expect(client.getMails()).rejects.toThrow(AuthError);
+      await expect(provider.getMails()).rejects.toThrow(AuthError);
     });
 
     it('throws AuthError on 403', async () => {
       const error = new RelayTempMailError('Forbidden', 'HTTP_ERROR', 403, 'Forbidden');
       mockGet.mockRejectedValueOnce(error);
 
-      await expect(client.getMails()).rejects.toThrow(AuthError);
+      await expect(provider.getMails()).rejects.toThrow(AuthError);
     });
 
     it('throws NotFoundError on 404', async () => {
       const error = new RelayTempMailError('Not Found', 'HTTP_ERROR', 404, 'Not Found');
       mockGet.mockRejectedValueOnce(error);
 
-      await expect(client.getMails()).rejects.toThrow(NotFoundError);
+      await expect(provider.getMails()).rejects.toThrow(NotFoundError);
     });
 
     it('throws RateLimitError on 429', async () => {
       const error = new RelayTempMailError('Rate Limited', 'HTTP_ERROR', 429, 'Rate Limited');
       mockGet.mockRejectedValueOnce(error);
 
-      await expect(client.getMails()).rejects.toThrow(RateLimitError);
+      await expect(provider.getMails()).rejects.toThrow(RateLimitError);
     });
 
     it('throws NetworkError on TypeError', async () => {
       mockGet.mockRejectedValueOnce(new TypeError('fetch failed'));
 
-      await expect(client.getMails()).rejects.toThrow(NetworkError);
+      await expect(provider.getMails()).rejects.toThrow(NetworkError);
+    });
+  });
+
+  describe('implements MailProvider', () => {
+    it('has getMails method', () => {
+      expect(typeof provider.getMails).toBe('function');
     });
   });
 });

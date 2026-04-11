@@ -1,5 +1,5 @@
 import { HttpClient } from './http';
-import { RelayAlias } from './types';
+import type { AliasProvider, RelayAlias } from './types';
 
 interface RawAliasResponse {
   id: number;
@@ -22,7 +22,7 @@ interface RawAliasResponse {
   used_on?: string | null;
 }
 
-export class RelayAPIClient {
+export class FirefoxRelayProvider implements AliasProvider {
   private csrfToken: string;
   private sessionId: string;
   private httpClient: HttpClient;
@@ -47,7 +47,7 @@ export class RelayAPIClient {
     };
   }
 
-  async getAliases(): Promise<RelayAlias[]> {
+  async listAliases(): Promise<RelayAlias[]> {
     const response = await this.httpClient.request<RawAliasResponse[]>(
       'GET',
       '/api/v1/relayaddresses/',
@@ -101,3 +101,6 @@ export class RelayAPIClient {
     };
   }
 }
+
+/** @deprecated Use FirefoxRelayProvider instead */
+export const RelayAPIClient = FirefoxRelayProvider;

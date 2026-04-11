@@ -1,57 +1,6 @@
-/**
- * CloudFlare temp email API client.
- *
- * This module provides the CFEmailClient class for interacting with the
- * CloudFlare temp email API to retrieve emails.
- */
-
-import { Email, CFMailsResponse } from './types.js';
+import type { MailProvider, Email } from './types.js';
 import { AuthError, NetworkError, NotFoundError, RateLimitError, RelayTempMailError } from './errors.js';
 
-/**
- * HTTP client interface for making requests.
- *
- * This interface allows for dependency injection, making testing easier
- * by allowing mock implementations.
- */
-export interface HttpClient {
-  /**
-   * Makes an HTTP GET request.
-   *
-   * @param url - The URL to request
-   * @param options - Request options including headers
-   * @returns The response body as unknown
-   */
-  get(url: string, options?: { headers?: Record<string, string> }): Promise<unknown>;
-}
-
-/**
- * Default HTTP client implementation using fetch.
- */
-class DefaultHttpClient implements HttpClient {
-  async get(url: string, options?: { headers?: Record<string, string> }): Promise<unknown> {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: options?.headers,
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new RelayTempMailError(
-        `HTTP ${response.status}: ${errorBody}`,
-        'HTTP_ERROR',
-        response.status,
-        errorBody
-      );
-    }
-
-    return response.json();
-  }
-}
-
-/**
- * Raw email response from CF API (snake_case properties).
- */
 interface CFRawEmail {
   id: number;
   message_id: string;
@@ -62,49 +11,22 @@ interface CFRawEmail {
   created_at: string;
 }
 
-/**
- * Raw API response structure.
- */
 interface CFRawResponse {
   results: CFRawEmail[];
   count: number;
 }
 
-/**
- * Client for interacting with the CloudFlare temp email API.
- *
- * This client handles authentication, request formatting, and response
- * mapping from the CF API's snake_case to camelCase.
- */
-export class CFEmailClient {
+export class CFTempMailProvider implements MailProvider {
   private readonly apiUrl: string;
   private readonly token: string;
   private readonly httpClient: HttpClient;
 
-  /**
-   * Creates a new CFEmailClient instance.
-   *
-   * @param apiUrl - Base URL for the CF temp email API
-   * @param token - Bearer token for authentication
-   * @param httpClient - Optional HTTP client (defaults to fetch-based implementation)
-   */
   constructor(apiUrl: string, token: string, httpClient?: HttpClient) {
     this.apiUrl = apiUrl.replace(/\/+$/, '');
     this.token = token;
     this.httpClient = httpClient ?? new DefaultHttpClient();
   }
 
-  /**
-   * Retrieves emails from the CF temp email API.
-   *
-   * @param limit - Maximum number of emails to return (default: 20)
-   * @param offset - Pagination offset (default: 0)
-   * @returns Promise resolving to an array of Email objects
-   * @throws AuthError if authentication fails
-   * @throws NetworkError if there's a network problem
-   * @throws NotFoundError if the endpoint doesn't exist
-   * @throws RateLimitError if rate limited
-   */
   async getMails(limit: number = 20, offset: number = 0): Promise<Email[]> {
     const url = new URL(`${this.apiUrl}/api/mails`);
     url.searchParams.set('limit', String(limit));
@@ -122,14 +44,6 @@ export class CFEmailClient {
     }
   }
 
-  /**
-   * Maps the raw CF API response to the Email interface.
-   *
-   * Converts snake_case property names to camelCase.
-   *
-   * @param response - Raw response from CF API
-   * @returns Array of Email objects
-   */
   private mapCFResponse(response: CFRawResponse): Email[] {
     return response.results.map((item): Email => ({
       id: item.id,
@@ -142,14 +56,6 @@ export class CFEmailClient {
     }));
   }
 
-  /**
-   * Handles errors from HTTP requests.
-   *
-   * Maps HTTP errors to appropriate error classes.
-   *
-   * @param error - The caught error
-   * @returns Appropriate RelayTempMailError subclass
-   */
   private handleError(error: unknown): RelayTempMailError {
     if (error instanceof RelayTempMailError) {
       const statusCode = error.statusCode;
@@ -181,5 +87,33 @@ export class CFEmailClient {
       undefined,
       error
     );
+  }
+}
+
+/** @deprecated Use CFTempMailProvider instead */
+export const CFEmailClient = CFTempMailProvider;
+
+export interface HttpClient {
+  get(url: string, options?: { headers?: Record<string, string> }): Promise<unknown>;
+}
+
+export class DefaultHttpClient implements HttpClient {
+  async get(url: string, options?: { headers?: Record<string, string> }): Promise<unknown> {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: options?.headers,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new RelayTempMailError(
+        `HTTP ${response.status}: ${errorBody}`,
+        'HTTP_ERROR',
+        response.status,
+        errorBody
+      );
+    }
+
+    return response.json();
   }
 }

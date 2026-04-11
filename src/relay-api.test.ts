@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { RelayAPIClient } from './relay-api';
+import { FirefoxRelayProvider } from './relay-api';
 import { HttpClient } from './http';
 import { AuthError, NotFoundError, NetworkError } from './errors';
 
-describe('RelayAPIClient', () => {
-  let client: RelayAPIClient;
+describe('FirefoxRelayProvider', () => {
+  let provider: FirefoxRelayProvider;
   let mockHttpClient: { request: ReturnType<typeof vi.fn> };
   let originalFetch: typeof fetch;
 
@@ -23,7 +23,7 @@ describe('RelayAPIClient', () => {
     mockHttpClient = {
       request: vi.fn(),
     };
-    client = new RelayAPIClient(csrfToken, sessionId, mockHttpClient as unknown as HttpClient);
+    provider = new FirefoxRelayProvider(csrfToken, sessionId, mockHttpClient as unknown as HttpClient);
   });
 
   afterEach(() => {
@@ -32,24 +32,24 @@ describe('RelayAPIClient', () => {
   });
 
   describe('constructor', () => {
-    it('creates client with csrfToken and sessionId', () => {
-      const client = new RelayAPIClient('token', 'session');
-      expect(client).toBeDefined();
+    it('creates provider with csrfToken and sessionId', () => {
+      const provider = new FirefoxRelayProvider('token', 'session');
+      expect(provider).toBeDefined();
     });
 
     it('uses provided httpClient when given', () => {
       const mockHttp = { request: vi.fn() };
-      const client = new RelayAPIClient('token', 'session', mockHttp as unknown as HttpClient);
-      expect(client).toBeDefined();
+      const provider = new FirefoxRelayProvider('token', 'session', mockHttp as unknown as HttpClient);
+      expect(provider).toBeDefined();
     });
 
     it('creates default HttpClient when not provided', () => {
-      const client = new RelayAPIClient('token', 'session');
-      expect(client).toBeDefined();
+      const provider = new FirefoxRelayProvider('token', 'session');
+      expect(provider).toBeDefined();
     });
   });
 
-  describe('getAliases', () => {
+  describe('listAliases', () => {
     it('returns RelayAlias[] on successful response', async () => {
       const mockResponse = [
         {
@@ -76,7 +76,7 @@ describe('RelayAPIClient', () => {
 
       mockHttpClient.request.mockResolvedValueOnce(mockResponse);
 
-      const result = await client.getAliases();
+      const result = await provider.listAliases();
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(17901547);
@@ -88,7 +88,7 @@ describe('RelayAPIClient', () => {
     it('sends correct auth headers', async () => {
       mockHttpClient.request.mockResolvedValueOnce([]);
 
-      await client.getAliases();
+      await provider.listAliases();
 
       expect(mockHttpClient.request).toHaveBeenCalledWith(
         'GET',
@@ -124,7 +124,7 @@ describe('RelayAPIClient', () => {
 
       mockHttpClient.request.mockResolvedValueOnce(mockResponse);
 
-      const result = await client.getAliases();
+      const result = await provider.listAliases();
 
       expect(result[0].fullAddress).toBe('test@mozmail.com');
       expect(result[0].maskType).toBe('random');
@@ -146,7 +146,7 @@ describe('RelayAPIClient', () => {
         new AuthError('Authentication failed', 401)
       );
 
-      await expect(client.getAliases()).rejects.toThrow(AuthError);
+      await expect(provider.listAliases()).rejects.toThrow(AuthError);
     });
 
     it('throws NetworkError on network failure', async () => {
@@ -154,7 +154,7 @@ describe('RelayAPIClient', () => {
         new NetworkError('Network request failed')
       );
 
-      await expect(client.getAliases()).rejects.toThrow(NetworkError);
+      await expect(provider.listAliases()).rejects.toThrow(NetworkError);
     });
   });
 
@@ -183,7 +183,7 @@ describe('RelayAPIClient', () => {
 
       mockHttpClient.request.mockResolvedValueOnce(mockResponse);
 
-      const result = await client.createAlias();
+      const result = await provider.createAlias();
 
       expect(result.id).toBe(17902636);
       expect(result.address).toBe('adbpzj5e2');
@@ -193,7 +193,7 @@ describe('RelayAPIClient', () => {
     it('sends correct auth headers', async () => {
       mockHttpClient.request.mockResolvedValueOnce({});
 
-      await client.createAlias();
+      await provider.createAlias();
 
       expect(mockHttpClient.request).toHaveBeenCalledWith(
         'POST',
@@ -210,7 +210,7 @@ describe('RelayAPIClient', () => {
         new AuthError('Authentication failed', 401)
       );
 
-      await expect(client.createAlias()).rejects.toThrow(AuthError);
+      await expect(provider.createAlias()).rejects.toThrow(AuthError);
     });
   });
 
@@ -218,13 +218,13 @@ describe('RelayAPIClient', () => {
     it('succeeds on successful deletion', async () => {
       mockHttpClient.request.mockResolvedValueOnce(undefined);
 
-      await expect(client.deleteAlias(17901547)).resolves.toBeUndefined();
+      await expect(provider.deleteAlias(17901547)).resolves.toBeUndefined();
     });
 
     it('sends correct auth headers and ID in path', async () => {
       mockHttpClient.request.mockResolvedValueOnce(undefined);
 
-      await client.deleteAlias(17901547);
+      await provider.deleteAlias(17901547);
 
       expect(mockHttpClient.request).toHaveBeenCalledWith(
         'DELETE',
@@ -240,7 +240,7 @@ describe('RelayAPIClient', () => {
         new NotFoundError('Resource not found')
       );
 
-      await expect(client.deleteAlias(999999)).rejects.toThrow(NotFoundError);
+      await expect(provider.deleteAlias(999999)).rejects.toThrow(NotFoundError);
     });
 
     it('throws AuthError on 401', async () => {
@@ -248,7 +248,7 @@ describe('RelayAPIClient', () => {
         new AuthError('Authentication failed', 401)
       );
 
-      await expect(client.deleteAlias(1)).rejects.toThrow(AuthError);
+      await expect(provider.deleteAlias(1)).rejects.toThrow(AuthError);
     });
   });
 
@@ -258,7 +258,21 @@ describe('RelayAPIClient', () => {
         new NetworkError('Server error', 500)
       );
 
-      await expect(client.getAliases()).rejects.toThrow(NetworkError);
+      await expect(provider.listAliases()).rejects.toThrow(NetworkError);
+    });
+  });
+
+  describe('implements AliasProvider', () => {
+    it('has listAliases method', () => {
+      expect(typeof provider.listAliases).toBe('function');
+    });
+
+    it('has createAlias method', () => {
+      expect(typeof provider.createAlias).toBe('function');
+    });
+
+    it('has deleteAlias method', () => {
+      expect(typeof provider.deleteAlias).toBe('function');
     });
   });
 });
