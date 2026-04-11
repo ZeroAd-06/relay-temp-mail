@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, type MockInstance } from 'vitest';
-import { RelayClient } from './client';
-import type { RelayAlias, Email, ParsedEmail } from './types';
+import { TempMailClient } from './client';
+import type { RelayAlias, Email, ParsedEmail, TempMailConfig } from './types';
 
 vi.mock('./cf-api', () => ({
-  CFEmailClient: vi.fn().mockImplementation(() => ({
+  CFTempMailProvider: vi.fn().mockImplementation(() => ({
     getMails: vi.fn(),
   })),
+  DefaultHttpClient: vi.fn().mockImplementation(() => ({})),
 }));
 
 vi.mock('./http', () => ({
@@ -13,8 +14,8 @@ vi.mock('./http', () => ({
 }));
 
 vi.mock('./relay-api', () => ({
-  RelayAPIClient: vi.fn().mockImplementation(() => ({
-    getAliases: vi.fn(),
+  FirefoxRelayProvider: vi.fn().mockImplementation(() => ({
+    listAliases: vi.fn(),
     createAlias: vi.fn(),
     deleteAlias: vi.fn(),
   })),
@@ -26,8 +27,8 @@ vi.mock('./parser', () => ({
   })),
 }));
 
-import { CFEmailClient } from './cf-api';
-import { RelayAPIClient } from './relay-api';
+import { CFTempMailProvider } from './cf-api';
+import { FirefoxRelayProvider } from './relay-api';
 import { EmailParser } from './parser';
 
 const createMockAlias = (overrides: Partial<RelayAlias> = {}): RelayAlias => ({
@@ -52,18 +53,24 @@ const createMockEmail = (overrides: Partial<Email> = {}): Email => ({
   ...overrides,
 });
 
-describe('RelayClient', () => {
-  const config = {
+const baseConfig: TempMailConfig = {
+  aliasProvider: {
+    type: 'firefox-relay',
     csrfToken: 'csrf-token',
     sessionId: 'session-id',
-    cfApiUrl: 'https://cf.example.com',
-    cfToken: 'cf-token',
-  };
+  },
+  mailProvider: {
+    type: 'cf-temp-mail',
+    apiUrl: 'https://cf.example.com',
+    token: 'cf-token',
+  },
+};
 
-  let client: RelayClient;
-  let mockCfApi: { getMails: ReturnType<typeof vi.fn> };
-  let mockRelayApi: {
-    getAliases: ReturnType<typeof vi.fn>;
+describe('TempMailClient', () => {
+  let client: TempMailClient;
+  let mockMailProvider: { getMails: ReturnType<typeof vi.fn> };
+  let mockAliasProvider: {
+    listAliases: ReturnType<typeof vi.fn>;
     createAlias: ReturnType<typeof vi.fn>;
     deleteAlias: ReturnType<typeof vi.fn>;
   };
@@ -72,55 +79,55 @@ describe('RelayClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    client = new RelayClient(config);
+    client = new TempMailClient(baseConfig);
 
-    const cfResults = (CFEmailClient as unknown as MockInstance).mock.results;
-    const relayResults = (RelayAPIClient as unknown as MockInstance).mock.results;
+    const cfResults = (CFTempMailProvider as unknown as MockInstance).mock.results;
+    const relayResults = (FirefoxRelayProvider as unknown as MockInstance).mock.results;
     const parserResults = (EmailParser as unknown as MockInstance).mock.results;
 
-    mockCfApi = cfResults[cfResults.length - 1].value as { getMails: ReturnType<typeof vi.fn> };
-    mockRelayApi = relayResults[relayResults.length - 1].value as typeof mockRelayApi;
+    mockMailProvider = cfResults[cfResults.length - 1].value as { getMails: ReturnType<typeof vi.fn> };
+    mockAliasProvider = relayResults[relayResults.length - 1].value as typeof mockAliasProvider;
     mockParser = parserResults[parserResults.length - 1].value as { parseEmail: ReturnType<typeof vi.fn> };
   });
 
   describe('listAliases', () => {
     it('returns RelayAlias[]', async () => {
       const aliases = [createMockAlias({ id: 1 }), createMockAlias({ id: 2 })];
-      mockRelayApi.getAliases.mockResolvedValue(aliases);
+      mockAliasProvider.listAliases.mockResolvedValue(aliases);
 
       const result = await client.listAliases();
 
       expect(result).toEqual(aliases);
-      expect(mockRelayApi.getAliases).toHaveBeenCalledOnce();
+      expect(mockAliasProvider.listAliases).toHaveBeenCalledOnce();
     });
   });
 
   describe('createAlias', () => {
     it('returns new RelayAlias', async () => {
       const newAlias = createMockAlias({ id: 3, address: 'newalias' });
-      mockRelayApi.createAlias.mockResolvedValue(newAlias);
+      mockAliasProvider.createAlias.mockResolvedValue(newAlias);
 
       const result = await client.createAlias();
 
       expect(result).toEqual(newAlias);
-      expect(mockRelayApi.createAlias).toHaveBeenCalledOnce();
+      expect(mockAliasProvider.createAlias).toHaveBeenCalledOnce();
     });
   });
 
   describe('deleteAlias', () => {
     it('succeeds', async () => {
-      mockRelayApi.deleteAlias.mockResolvedValue(undefined);
+      mockAliasProvider.deleteAlias.mockResolvedValue(undefined);
 
       await client.deleteAlias(1);
 
-      expect(mockRelayApi.deleteAlias).toHaveBeenCalledWith(1);
+      expect(mockAliasProvider.deleteAlias).toHaveBeenCalledWith(1);
     });
   });
 
   describe('getEmails', () => {
     it('without filter returns all parsed emails', async () => {
       const emails = [createMockEmail({ id: 1 }), createMockEmail({ id: 2 })];
-      mockCfApi.getMails.mockResolvedValue(emails);
+      mockMailProvider.getMails.mockResolvedValue(emails);
 
       const parsedEmails: ParsedEmail[] = [
         { ...emails[0], relayAlias: 'test@mozmail.com' },
@@ -135,7 +142,7 @@ describe('RelayClient', () => {
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe(1);
       expect(result[1].id).toBe(2);
-      expect(mockCfApi.getMails).toHaveBeenCalledWith(20, 0);
+      expect(mockMailProvider.getMails).toHaveBeenCalledWith(20, 0);
     });
 
     it('with aliasAddress filters correctly', async () => {
@@ -143,7 +150,7 @@ describe('RelayClient', () => {
         createMockEmail({ id: 1, address: 'alias1@mozmail.com' }),
         createMockEmail({ id: 2, address: 'alias2@mozmail.com' }),
       ];
-      mockCfApi.getMails.mockResolvedValue(emails);
+      mockMailProvider.getMails.mockResolvedValue(emails);
 
       const parsedEmails: ParsedEmail[] = [
         { ...emails[0], relayAlias: 'alias1@mozmail.com' },
@@ -161,7 +168,7 @@ describe('RelayClient', () => {
 
     it('with aliasAddress filters case-insensitively', async () => {
       const emails = [createMockEmail({ id: 1 })];
-      mockCfApi.getMails.mockResolvedValue(emails);
+      mockMailProvider.getMails.mockResolvedValue(emails);
 
       mockParser.parseEmail.mockReturnValue({
         ...emails[0],
@@ -179,7 +186,7 @@ describe('RelayClient', () => {
         address: 'tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org',
         raw: 'To: tmpnie91@wwwwwwwwwwwwedlihgt.dpdns.org\nFrom: sender@example.com\nSubject: Test\n\nBody',
       });
-      mockCfApi.getMails.mockResolvedValue([email]);
+      mockMailProvider.getMails.mockResolvedValue([email]);
 
       mockParser.parseEmail.mockReturnValue({
         ...email,
@@ -193,7 +200,7 @@ describe('RelayClient', () => {
     });
 
     it('passes pagination options', async () => {
-      mockCfApi.getMails.mockResolvedValue([]);
+      mockMailProvider.getMails.mockResolvedValue([]);
       mockParser.parseEmail.mockReturnValue({
         id: 0,
         messageId: '',
@@ -206,7 +213,7 @@ describe('RelayClient', () => {
 
       await client.getEmails(undefined, { limit: 50, offset: 10 });
 
-      expect(mockCfApi.getMails).toHaveBeenCalledWith(50, 10);
+      expect(mockMailProvider.getMails).toHaveBeenCalledWith(50, 10);
     });
 
     it('preserves original email metadata over parsed values', async () => {
@@ -218,7 +225,7 @@ describe('RelayClient', () => {
         createdAt: '2024-05-01T10:00:00Z',
         metadata: { key: 'value' },
       });
-      mockCfApi.getMails.mockResolvedValue([email]);
+      mockMailProvider.getMails.mockResolvedValue([email]);
 
       mockParser.parseEmail.mockReturnValue({
         id: 0,
@@ -244,7 +251,7 @@ describe('RelayClient', () => {
 
     it('filters out emails without relayAlias when aliasAddress is provided', async () => {
       const emails = [createMockEmail({ id: 1 }), createMockEmail({ id: 2 })];
-      mockCfApi.getMails.mockResolvedValue(emails);
+      mockMailProvider.getMails.mockResolvedValue(emails);
 
       mockParser.parseEmail
         .mockReturnValueOnce({
@@ -264,18 +271,44 @@ describe('RelayClient', () => {
   });
 
   describe('error handling', () => {
-    it('propagates errors from RelayAPIClient', async () => {
+    it('propagates errors from AliasProvider', async () => {
       const error = new Error('Auth failed');
-      mockRelayApi.getAliases.mockRejectedValue(error);
+      mockAliasProvider.listAliases.mockRejectedValue(error);
 
       await expect(client.listAliases()).rejects.toThrow('Auth failed');
     });
 
-    it('propagates errors from CFEmailClient', async () => {
+    it('propagates errors from MailProvider', async () => {
       const error = new Error('Network error');
-      mockCfApi.getMails.mockRejectedValue(error);
+      mockMailProvider.getMails.mockRejectedValue(error);
 
       await expect(client.getEmails()).rejects.toThrow('Network error');
+    });
+  });
+
+  describe('constructor', () => {
+    it('creates client with firefox-relay and cf-temp-mail providers', () => {
+      const client = new TempMailClient(baseConfig);
+      expect(client).toBeDefined();
+    });
+
+    it('passes csrfToken and sessionId to FirefoxRelayProvider', () => {
+      new TempMailClient(baseConfig);
+
+      expect(FirefoxRelayProvider).toHaveBeenCalledWith(
+        'csrf-token',
+        'session-id',
+        expect.anything()
+      );
+    });
+
+    it('passes apiUrl and token to CFTempMailProvider', () => {
+      new TempMailClient(baseConfig);
+
+      expect(CFTempMailProvider).toHaveBeenCalledWith(
+        'https://cf.example.com',
+        'cf-token'
+      );
     });
   });
 });
