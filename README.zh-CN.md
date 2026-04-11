@@ -4,12 +4,13 @@
 
 一个模块化的 TypeScript/JavaScript 包，通过可插拔的 Provider 管理邮箱别名和接收临时邮件。
 
-基于 Provider 架构 — 自由组合**别名提供商**与**邮件提供商**。当前内置 Firefox Relay 和 CloudFlare 临时邮箱支持，更多提供商即将推出。
+基于 Provider 架构 — 自由组合**别名提供商**与**邮件提供商**。当前内置 Firefox Relay、DuckDuckGo 邮件保护和 CloudFlare 临时邮箱支持。
 
 ## 功能特性
 
 - **Provider 架构** — 自由组合别名与邮件提供商
 - **Firefox Relay** — 创建、列出、删除邮箱别名
+- **DuckDuckGo 邮件保护** — 创建邮箱别名，支持本地存储
 - **CloudFlare 临时邮箱** — 通过 API 获取并解析邮件
 - **TypeScript 支持** — 所有 API 均有完整类型定义，包括 Provider 接口
 - **ESM + CommonJS 支持** — 兼容两种模块系统
@@ -60,7 +61,7 @@ const emails = await client.getEmails(alias.fullAddress, { limit: 10 });
 
 | Provider 类型 | 接口 | 当前实现 |
 |---|---|---|
-| **别名提供商** | `AliasProvider` | `firefox-relay` |
+| **别名提供商** | `AliasProvider` | `firefox-relay`, `duckduckgo-email` |
 | **邮件提供商** | `MailProvider` | `cf-temp-mail` |
 
 ### 别名提供商
@@ -86,6 +87,53 @@ const emails = await client.getEmails(alias.fullAddress, { limit: 10 });
 3. 切换到 Application/Storage 标签页
 4. 找到 `relay.firefox.com` 的 Cookies
 5. 复制 `csrftoken` 和 `sessionid` 的值
+
+#### `duckduckgo-email`
+
+通过 [DuckDuckGo 邮件保护](https://duckduckgo.com/email/) 管理邮箱别名。
+
+由于 DuckDuckGo API 不提供列出或删除别名的接口，该提供商使用本地存储。内置内存存储；可通过实现 `DuckDuckGoAliasStore` 接口自定义持久化（如文件、数据库）。
+
+**配置：**
+
+```typescript
+{
+  type: 'duckduckgo-email',
+  jwtToken: string;             // DuckDuckGo 邮件保护的 JWT token
+  store?: DuckDuckGoAliasStore; // 可选自定义存储（默认: 内存存储）
+}
+```
+
+**获取 JWT Token：**
+
+1. 访问 [duckduckgo.com/email](https://duckduckgo.com/email/) 并注册账户
+2. 打开浏览器开发者工具（F12）
+3. 在 DuckDuckGo 邮件界面点击"生成新地址"
+4. 在网络请求栏中找到发往 `quack.duckduckgo.com` 的请求
+5. 从 `Authorization` 请求头中复制 Bearer token
+
+**自定义持久化：**
+
+```typescript
+import type { DuckDuckGoAliasStore, RelayAlias } from '@z_06/relay-temp-mail';
+
+class MyFileStore implements DuckDuckGoAliasStore {
+  getAll(): RelayAlias[] { /* 从文件读取 */ }
+  add(alias: RelayAlias): void { /* 追加到文件 */ }
+  remove(id: number): void { /* 从文件中删除 */ }
+}
+
+const client = new TempMailClient({
+  aliasProvider: {
+    type: 'duckduckgo-email',
+    jwtToken: 'your-jwt-token',
+    store: new MyFileStore(),
+  },
+  mailProvider: { /* ... */ },
+});
+```
+
+**重复检测：** DuckDuckGo API 偶尔会返回之前已生成过的地址（仍返回 201）。该提供商会检测这种情况并抛出 `RelayTempMailError`，错误代码为 `DUPLICATE_ALIAS`。
 
 ### 邮件提供商
 
@@ -255,6 +303,8 @@ import type {
   MailProvider,
   TempMailConfig,
   FirefoxRelayConfig,
+  DuckDuckGoEmailConfig,
+  DuckDuckGoAliasStore,
   CFTempMailConfig,
   RelayAlias,
   Email,

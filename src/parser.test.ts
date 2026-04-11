@@ -112,6 +112,52 @@ Body`;
       const alias = parser.extractRelayAlias(raw);
       expect(alias).toBe('ptnzsk1t7@mozmail.com');
     });
+
+    it('extracts @duck.com alias from To header', () => {
+      const raw = `From: sender@example.com
+To: abc-def-ghi@duck.com
+Subject: Test
+
+Body`;
+
+      const alias = parser.extractRelayAlias(raw);
+      expect(alias).toBe('abc-def-ghi@duck.com');
+    });
+
+    it('prefers Duck-Original-To header over To header', () => {
+      const raw = `From: sender@example.com
+To: real-inbox@gmail.com
+Duck-Original-To: xyz-abc-123@duck.com
+Subject: Test
+
+Body`;
+
+      const alias = parser.extractRelayAlias(raw);
+      expect(alias).toBe('xyz-abc-123@duck.com');
+    });
+
+    it('prefers mozmail over duck.com when both present', () => {
+      const raw = `From: sender@example.com
+To: abc@duck.com, xyz@mozmail.com
+Subject: Test
+
+Body`;
+
+      const alias = parser.extractRelayAlias(raw);
+      expect(alias).toBe('xyz@mozmail.com');
+    });
+
+    it('extracts duck.com alias from Duck-Original-To with display name', () => {
+      const raw = `From: sender@example.com
+To: Real Name <real-inbox@gmail.com>
+Duck-Original-To: <test-alias@duck.com>
+Subject: Test
+
+Body`;
+
+      const alias = parser.extractRelayAlias(raw);
+      expect(alias).toBe('test-alias@duck.com');
+    });
   });
 
   describe('parseEmail', () => {

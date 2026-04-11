@@ -1,4 +1,5 @@
 import { CFTempMailProvider, DefaultHttpClient } from './cf-api.js';
+import { DuckDuckGoEmailProvider } from './duckduckgo-api.js';
 import { EmailParser } from './parser.js';
 import { FirefoxRelayProvider } from './relay-api.js';
 import { HttpClient } from './http.js';
@@ -20,6 +21,11 @@ function createAliasProvider(config: TempMailConfig, httpClient: HttpClient): Al
         aliasConfig.csrfToken,
         aliasConfig.sessionId,
         httpClient
+      );
+    case 'duckduckgo-email':
+      return new DuckDuckGoEmailProvider(
+        aliasConfig.jwtToken,
+        aliasConfig.store
       );
   }
 }

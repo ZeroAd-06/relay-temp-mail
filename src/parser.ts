@@ -5,6 +5,7 @@ import type { ParsedEmail } from './types.js';
 
 const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const MOZMAIL_SUFFIX_PATTERN = /@mozmail\.com$/i;
+const DUCK_SUFFIX_PATTERN = /@duck\.com$/i;
 const ENCODED_WORD_PATTERN = /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g;
 
 /**
@@ -33,6 +34,17 @@ export class EmailParser {
   extractRelayAlias(raw: string): string | null {
     try {
       const headers = this.parseHeaders(raw);
+
+      // DuckDuckGo Email Protection adds a Duck-Original-To header
+      // containing the @duck.com alias the email was forwarded to
+      const duckOriginalTo = headers.get('duck-original-to');
+      if (duckOriginalTo) {
+        const duckAddress = this.extractEmailAddress(duckOriginalTo);
+        if (duckAddress && DUCK_SUFFIX_PATTERN.test(duckAddress)) {
+          return duckAddress;
+        }
+      }
+
       const fromAddresses = this.extractHeaderEmails(headers.get('from'));
       const toAddresses = this.extractHeaderEmails(headers.get('to'));
       const allAddresses = [...fromAddresses, ...toAddresses];
@@ -41,6 +53,11 @@ export class EmailParser {
         MOZMAIL_SUFFIX_PATTERN.test(address)
       );
       if (mozmailAddress) return mozmailAddress;
+
+      const duckAddress = allAddresses.find((address) =>
+        DUCK_SUFFIX_PATTERN.test(address)
+      );
+      if (duckAddress) return duckAddress;
 
       return toAddresses[0] ?? null;
     } catch {
