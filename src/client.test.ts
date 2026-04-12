@@ -278,6 +278,41 @@ describe('TempMailClient', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(1);
     });
+
+    it('matches aliasAddress by raw content search when headers are stripped', async () => {
+      const email = createMockEmail({
+        id: 1,
+        address: 'real-inbox@gmail.com',
+        raw: 'From: sender@example.com\nTo: real-inbox@gmail.com\nSubject: Test\n\nSent to tag-hulk-marina@duck.com',
+      });
+      mockMailProvider.getMails.mockResolvedValue([email]);
+
+      mockParser.parseEmail.mockReturnValue({
+        ...email,
+        relayAlias: undefined,
+      });
+
+      const result = await client.getEmails('tag-hulk-marina@duck.com');
+
+      expect(result).toHaveLength(1);
+    });
+
+    it('raw content search is case-insensitive', async () => {
+      const email = createMockEmail({
+        id: 1,
+        raw: 'From: sender@example.com\nTo: real-inbox@gmail.com\n\nTag-Hulk-Marina@Duck.Com',
+      });
+      mockMailProvider.getMails.mockResolvedValue([email]);
+
+      mockParser.parseEmail.mockReturnValue({
+        ...email,
+        relayAlias: undefined,
+      });
+
+      const result = await client.getEmails('tag-hulk-marina@duck.com');
+
+      expect(result).toHaveLength(1);
+    });
   });
 
   describe('error handling', () => {

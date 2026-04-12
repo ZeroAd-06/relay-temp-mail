@@ -5,13 +5,6 @@ import type { ParsedEmail } from './types.js';
 
 const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const MOZMAIL_SUFFIX_PATTERN = /@mozmail\.com$/i;
-const DUCK_SUFFIX_PATTERN = /@duck\.com$/i;
-// DuckDuckGo aliases are "word-word-word@duck.com"; the From header
-// uses "sender_at_domain_alias@duck.com" which EMAIL_PATTERN matches
-// as a single address. This pattern extracts just the alias portion.
-const DUCK_ALIAS_PATTERN = /([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)+@duck\.com)/gi;
-// System addresses at @duck.com that are not user aliases
-const DUCK_SYSTEM_ADDRESSES = new Set(['support@duck.com', 'noreply@duck.com']);
 const ENCODED_WORD_PATTERN = /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g;
 
 /**
@@ -40,34 +33,6 @@ export class EmailParser {
   extractRelayAlias(raw: string): string | null {
     try {
       const headers = this.parseHeaders(raw);
-
-      // DuckDuckGo Email Protection adds a Duck-Original-To header
-      // containing the @duck.com alias the email was forwarded to
-      const duckOriginalTo = headers.get('duck-original-to');
-      if (duckOriginalTo) {
-        const duckAddress = this.extractEmailAddress(duckOriginalTo);
-        if (duckAddress && DUCK_SUFFIX_PATTERN.test(duckAddress)) {
-          return duckAddress;
-        }
-      }
-
-      // Search the full raw content for @duck.com addresses.
-      // Duck-Original-To may be stripped during forwarding,
-      // but the alias address often appears in From headers as
-      // "sender_at_domain_alias@duck.com" or elsewhere in the MIME.
-      // First try the precise pattern (hyphenated aliases like word-word-word@duck.com)
-      const duckMatches = raw.match(DUCK_ALIAS_PATTERN);
-      if (duckMatches && duckMatches.length > 0) {
-        return duckMatches[0].toLowerCase();
-      }
-      // Fallback: search with broader EMAIL_PATTERN and filter for @duck.com,
-      // excluding known system addresses like support@duck.com
-      const rawEmails = raw.match(EMAIL_PATTERN) ?? [];
-      const duckFallback = rawEmails.find(
-        (e) => DUCK_SUFFIX_PATTERN.test(e) && !DUCK_SYSTEM_ADDRESSES.has(e.toLowerCase())
-      );
-      if (duckFallback) return duckFallback.toLowerCase();
-
       const fromAddresses = this.extractHeaderEmails(headers.get('from'));
       const toAddresses = this.extractHeaderEmails(headers.get('to'));
       const allAddresses = [...fromAddresses, ...toAddresses];

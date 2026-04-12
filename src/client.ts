@@ -93,7 +93,8 @@ export class TempMailClient {
       return parsedEmails.filter(
         (email) =>
           email.relayAlias?.toLowerCase() === normalizedAlias ||
-          email.address.toLowerCase() === normalizedAlias
+          email.address.toLowerCase() === normalizedAlias ||
+          email.raw.toLowerCase().includes(normalizedAlias)
       );
     }
 
