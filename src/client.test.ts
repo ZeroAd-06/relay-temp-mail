@@ -21,15 +21,6 @@ vi.mock('./relay-api', () => ({
   })),
 }));
 
-vi.mock('./duckduckgo-api', () => ({
-  DuckDuckGoEmailProvider: vi.fn().mockImplementation(() => ({
-    listAliases: vi.fn(),
-    createAlias: vi.fn(),
-    deleteAlias: vi.fn(),
-  })),
-  InMemoryDuckDuckGoAliasStore: vi.fn().mockImplementation(() => ({})),
-}));
-
 vi.mock('./parser', () => ({
   EmailParser: vi.fn().mockImplementation(() => ({
     parseEmail: vi.fn(),
@@ -38,7 +29,6 @@ vi.mock('./parser', () => ({
 
 import { CFTempMailProvider } from './cf-api';
 import { FirefoxRelayProvider } from './relay-api';
-import { DuckDuckGoEmailProvider } from './duckduckgo-api';
 import { EmailParser } from './parser';
 
 const createMockAlias = (overrides: Partial<RelayAlias> = {}): RelayAlias => ({
@@ -278,41 +268,6 @@ describe('TempMailClient', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(1);
     });
-
-    it('matches aliasAddress by raw content search when headers are stripped', async () => {
-      const email = createMockEmail({
-        id: 1,
-        address: 'real-inbox@gmail.com',
-        raw: 'From: sender@example.com\nTo: real-inbox@gmail.com\nSubject: Test\n\nSent to tag-hulk-marina@duck.com',
-      });
-      mockMailProvider.getMails.mockResolvedValue([email]);
-
-      mockParser.parseEmail.mockReturnValue({
-        ...email,
-        relayAlias: undefined,
-      });
-
-      const result = await client.getEmails('tag-hulk-marina@duck.com');
-
-      expect(result).toHaveLength(1);
-    });
-
-    it('raw content search is case-insensitive', async () => {
-      const email = createMockEmail({
-        id: 1,
-        raw: 'From: sender@example.com\nTo: real-inbox@gmail.com\n\nTag-Hulk-Marina@Duck.Com',
-      });
-      mockMailProvider.getMails.mockResolvedValue([email]);
-
-      mockParser.parseEmail.mockReturnValue({
-        ...email,
-        relayAlias: undefined,
-      });
-
-      const result = await client.getEmails('tag-hulk-marina@duck.com');
-
-      expect(result).toHaveLength(1);
-    });
   });
 
   describe('error handling', () => {
@@ -353,55 +308,6 @@ describe('TempMailClient', () => {
       expect(CFTempMailProvider).toHaveBeenCalledWith(
         'https://cf.example.com',
         'cf-token'
-      );
-    });
-
-    it('creates client with duckduckgo-email alias provider', () => {
-      const ddgConfig: TempMailConfig = {
-        aliasProvider: {
-          type: 'duckduckgo-email',
-          jwtToken: 'ddg-jwt-token',
-        },
-        mailProvider: {
-          type: 'cf-temp-mail',
-          apiUrl: 'https://cf.example.com',
-          token: 'cf-token',
-        },
-      };
-
-      new TempMailClient(ddgConfig);
-
-      expect(DuckDuckGoEmailProvider).toHaveBeenCalledWith(
-        'ddg-jwt-token',
-        undefined
-      );
-    });
-
-    it('creates duckduckgo-email provider with custom store', () => {
-      const customStore = {
-        getAll: () => [],
-        add: () => {},
-        remove: () => {},
-      };
-
-      const ddgConfig: TempMailConfig = {
-        aliasProvider: {
-          type: 'duckduckgo-email',
-          jwtToken: 'ddg-jwt-token',
-          store: customStore,
-        },
-        mailProvider: {
-          type: 'cf-temp-mail',
-          apiUrl: 'https://cf.example.com',
-          token: 'cf-token',
-        },
-      };
-
-      new TempMailClient(ddgConfig);
-
-      expect(DuckDuckGoEmailProvider).toHaveBeenCalledWith(
-        'ddg-jwt-token',
-        customStore
       );
     });
   });
