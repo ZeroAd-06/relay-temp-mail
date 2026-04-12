@@ -6,6 +6,7 @@ export type {
   DuckDuckGoEmailConfig,
   DuckDuckGoAliasStore,
   CFTempMailConfig,
+  GmailConfig,
   AliasProviderConfig,
   MailProviderConfig,
   RelayAlias,
@@ -38,3 +39,5 @@ export {
   DuckDuckGoEmailProvider,
   InMemoryDuckDuckGoAliasStore,
 } from './duckduckgo-api.js';
+
+export { GmailProvider } from './gmail-api.js';

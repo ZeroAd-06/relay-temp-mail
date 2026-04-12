@@ -159,3 +159,72 @@ const client = new TempMailClient({
   },
 });
 ```
+
+---
+
+### `gmail`
+
+Retrieves emails from a Gmail account via the [Gmail API](https://developers.google.com/gmail/api).
+
+Supports two authentication modes:
+
+1. **Access token** — provide `accessToken` directly if you manage OAuth2 token refresh yourself.
+2. **OAuth2 refresh token** — provide `clientId`, `clientSecret`, and `refreshToken` and the provider will automatically refresh the access token when it expires.
+
+#### Configuration
+
+```typescript
+{
+  type: 'gmail',
+  userId?: string;         // Gmail address (default: 'me')
+  accessToken?: string;    // Option A: provide access token directly
+  clientId?: string;       // Option B: provide OAuth2 credentials
+  clientSecret?: string;
+  refreshToken?: string;
+}
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `type` | `'gmail'` | Yes | Provider discriminator |
+| `userId` | `string` | No | Gmail address used as the userId in API calls (default: `'me'`) |
+| `accessToken` | `string` | Conditional | OAuth2 access token. Required if not using refresh-token auth |
+| `clientId` | `string` | Conditional | Google OAuth2 client ID. Required with refresh-token auth |
+| `clientSecret` | `string` | Conditional | Google OAuth2 client secret. Required with refresh-token auth |
+| `refreshToken` | `string` | Conditional | Google OAuth2 refresh token. Required if not providing `accessToken` |
+
+#### Getting Your OAuth2 Credentials
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project (or select an existing one)
+3. Enable the **Gmail API** from the API Library
+4. Go to **Credentials** → **Create Credentials** → **OAuth client ID**
+5. Set the application type to **Desktop app** or **Web application**
+6. Copy the `client_id` and `client_secret`
+7. Use the OAuth2 playground or your own flow to obtain a `refresh_token` with the `https://www.googleapis.com/auth/gmail.readonly` scope
+
+#### Usage Example
+
+```typescript
+import { TempMailClient } from '@z_06/relay-temp-mail';
+
+// Option A: with access token (you manage refresh yourself)
+const client = new TempMailClient({
+  aliasProvider: { /* ... */ },
+  mailProvider: {
+    type: 'gmail',
+    accessToken: 'ya29.a0AfH6...',
+  },
+});
+
+// Option B: with OAuth2 refresh token (provider auto-refreshes)
+const client = new TempMailClient({
+  aliasProvider: { /* ... */ },
+  mailProvider: {
+    type: 'gmail',
+    clientId: 'your-client-id.apps.googleusercontent.com',
+    clientSecret: 'your-client-secret',
+    refreshToken: '1//0g...',
+  },
+});
+```

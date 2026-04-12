@@ -159,3 +159,72 @@ const client = new TempMailClient({
   },
 });
 ```
+
+---
+
+### `gmail`
+
+通过 [Gmail API](https://developers.google.com/gmail/api) 从 Gmail 账户获取邮件。
+
+支持两种认证模式：
+
+1. **Access Token** — 直接提供 `accessToken`，适用于自行管理 OAuth2 token 刷新的场景。
+2. **OAuth2 Refresh Token** — 提供 `clientId`、`clientSecret` 和 `refreshToken`，提供商将自动刷新过期的 access token。
+
+#### 配置
+
+```typescript
+{
+  type: 'gmail',
+  userId?: string;         // Gmail 地址（默认: 'me'）
+  accessToken?: string;    // 方式 A: 直接提供 access token
+  clientId?: string;       // 方式 B: 提供 OAuth2 凭证
+  clientSecret?: string;
+  refreshToken?: string;
+}
+```
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `type` | `'gmail'` | 是 | 提供商标识符 |
+| `userId` | `string` | 否 | API 调用中使用的 Gmail 地址（默认: `'me'`） |
+| `accessToken` | `string` | 条件必填 | OAuth2 access token。不使用 refresh token 认证时必填 |
+| `clientId` | `string` | 条件必填 | Google OAuth2 客户端 ID。使用 refresh token 认证时必填 |
+| `clientSecret` | `string` | 条件必填 | Google OAuth2 客户端密钥。使用 refresh token 认证时必填 |
+| `refreshToken` | `string` | 条件必填 | Google OAuth2 刷新令牌。不提供 `accessToken` 时必填 |
+
+#### 获取 OAuth2 凭证
+
+1. 访问 [Google Cloud Console](https://console.cloud.google.com/)
+2. 创建新项目（或选择已有项目）
+3. 在 API 库中启用 **Gmail API**
+4. 进入 **凭据** → **创建凭据** → **OAuth 客户端 ID**
+5. 应用类型选择 **桌面应用** 或 **网页应用**
+6. 复制 `client_id` 和 `client_secret`
+7. 使用 OAuth2 Playground 或自行实现流程获取 `refresh_token`，所需权限范围为 `https://www.googleapis.com/auth/gmail.readonly`
+
+#### 使用示例
+
+```typescript
+import { TempMailClient } from '@z_06/relay-temp-mail';
+
+// 方式 A: 使用 access token（自行管理刷新）
+const client = new TempMailClient({
+  aliasProvider: { /* ... */ },
+  mailProvider: {
+    type: 'gmail',
+    accessToken: 'ya29.a0AfH6...',
+  },
+});
+
+// 方式 B: 使用 OAuth2 refresh token（提供商自动刷新）
+const client = new TempMailClient({
+  aliasProvider: { /* ... */ },
+  mailProvider: {
+    type: 'gmail',
+    clientId: 'your-client-id.apps.googleusercontent.com',
+    clientSecret: 'your-client-secret',
+    refreshToken: '1//0g...',
+  },
+});
+```
