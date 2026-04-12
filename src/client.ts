@@ -1,6 +1,4 @@
 import { CFTempMailProvider, DefaultHttpClient } from './cf-api.js';
-import { DuckDuckGoEmailProvider } from './duckduckgo-api.js';
-import { GmailProvider } from './gmail-api.js';
 import { EmailParser } from './parser.js';
 import { FirefoxRelayProvider } from './relay-api.js';
 import { HttpClient } from './http.js';
@@ -23,11 +21,6 @@ function createAliasProvider(config: TempMailConfig, httpClient: HttpClient): Al
         aliasConfig.sessionId,
         httpClient
       );
-    case 'duckduckgo-email':
-      return new DuckDuckGoEmailProvider(
-        aliasConfig.jwtToken,
-        aliasConfig.store
-      );
   }
 }
 
@@ -39,14 +32,6 @@ function createMailProvider(config: TempMailConfig): MailProvider {
         mailConfig.apiUrl,
         mailConfig.token
       );
-    case 'gmail':
-      return new GmailProvider({
-        userId: mailConfig.userId,
-        accessToken: mailConfig.accessToken,
-        clientId: mailConfig.clientId,
-        clientSecret: mailConfig.clientSecret,
-        refreshToken: mailConfig.refreshToken,
-      });
   }
 }
 
@@ -102,8 +87,7 @@ export class TempMailClient {
       return parsedEmails.filter(
         (email) =>
           email.relayAlias?.toLowerCase() === normalizedAlias ||
-          email.address.toLowerCase() === normalizedAlias ||
-          email.raw.toLowerCase().includes(normalizedAlias)
+          email.address.toLowerCase() === normalizedAlias
       );
     }
 

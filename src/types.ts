@@ -76,76 +76,12 @@ export interface FirefoxRelayConfig {
 }
 
 /**
- * Storage interface for DuckDuckGo email aliases.
- *
- * Since the DuckDuckGo Email Protection API does not provide endpoints
- * for listing or deleting aliases, the DuckDuckGoEmailProvider uses a
- * local store to persist alias information. Implement this interface to
- * provide custom persistence (e.g., file-based, database).
- *
- * A default in-memory implementation (`InMemoryDuckDuckGoAliasStore`)
- * is provided for convenience, but aliases will be lost when the process
- * exits.
- */
-export interface DuckDuckGoAliasStore {
-  /**
-   * Retrieves all stored aliases.
-   *
-   * @returns Array of RelayAlias objects from the store
-   */
-  getAll(): RelayAlias[] | Promise<RelayAlias[]>;
-
-  /**
-   * Adds a new alias to the store.
-   *
-   * @param alias - The alias to store
-   */
-  add(alias: RelayAlias): void | Promise<void>;
-
-  /**
-   * Removes an alias from the store by its ID.
-   *
-   * @param id - The unique identifier of the alias to remove
-   */
-  remove(id: number): void | Promise<void>;
-}
-
-/**
- * Configuration for the DuckDuckGo Email Protection alias provider.
- */
-export interface DuckDuckGoEmailConfig {
-  /** Discriminant identifying this provider type */
-  type: 'duckduckgo-email';
-
-  /**
-   * JWT token for DuckDuckGo Email Protection API authentication.
-   *
-   * To obtain this token:
-   * 1. Visit https://duckduckgo.com/email/ and register an account
-   * 2. Open browser developer tools (F12)
-   * 3. Click "Generate New Address" in the DuckDuckGo Email UI
-   * 4. In the Network tab, find the request to quack.duckduckgo.com
-   * 5. Copy the Bearer token from the Authorization header
-   */
-  jwtToken: string;
-
-  /**
-   * Optional custom store for persisting aliases.
-   *
-   * If not provided, an in-memory store is used (aliases are lost on
-   * process exit). Implement `DuckDuckGoAliasStore` for custom
-   * persistence (e.g., file-based, database).
-   */
-  store?: DuckDuckGoAliasStore;
-}
-
-/**
  * Union type for all supported alias provider configurations.
  *
- * Currently supports 'firefox-relay' and 'duckduckgo-email'.
- * More providers can be added here in the future.
+ * Currently only supports 'firefox-relay'. More providers (simplelogin,
+ * duckduckgo, etc.) can be added here in the future.
  */
-export type AliasProviderConfig = FirefoxRelayConfig | DuckDuckGoEmailConfig;
+export type AliasProviderConfig = FirefoxRelayConfig;
 
 /**
  * Configuration for the CloudFlare temp mail provider.
@@ -162,57 +98,12 @@ export interface CFTempMailConfig {
 }
 
 /**
- * Configuration for the Gmail mail provider.
- *
- * Supports two authentication modes:
- * 1. **Access token** — provide `accessToken` directly if you manage
- *    OAuth2 token refresh yourself.
- * 2. **OAuth2 refresh token** — provide `clientId`, `clientSecret`, and
- *    `refreshToken` and the provider will automatically refresh the
- *    access token when it expires.
- */
-export interface GmailConfig {
-  /** Discriminant identifying this provider type */
-  type: 'gmail';
-
-  /**
-   * Gmail address used as the userId in API calls.
-   * Defaults to 'me' (the authenticated user) if not provided.
-   */
-  userId?: string;
-
-  /**
-   * OAuth2 access token for the Gmail API.
-   * Required if not using `refreshToken`-based auth.
-   */
-  accessToken?: string;
-
-  /**
-   * Google OAuth2 client ID.
-   * Required when using refresh-token-based authentication.
-   */
-  clientId?: string;
-
-  /**
-   * Google OAuth2 client secret.
-   * Required when using refresh-token-based authentication.
-   */
-  clientSecret?: string;
-
-  /**
-   * Google OAuth2 refresh token.
-   * Required when not providing `accessToken` directly.
-   */
-  refreshToken?: string;
-}
-
-/**
  * Union type for all supported mail provider configurations.
  *
- * Currently supports 'cf-temp-mail' and 'gmail'.
- * More providers (imap, pop3, etc.) can be added here in the future.
+ * Currently only supports 'cf-temp-mail'. More providers (imap, pop3, etc.)
+ * can be added here in the future.
  */
-export type MailProviderConfig = CFTempMailConfig | GmailConfig;
+export type MailProviderConfig = CFTempMailConfig;
 
 // ============================================================================
 // Client Configuration
