@@ -114,6 +114,64 @@ The DuckDuckGo API may occasionally return a previously-generated address with a
 
 ---
 
+### `simple-login`
+
+Manages email aliases through [SimpleLogin](https://simplelogin.io).
+
+#### Configuration
+
+```typescript
+{
+  type: 'simple-login',
+  apiKey: string;    // SimpleLogin API key
+  apiUrl?: string;  // Optional custom API URL (default: https://app.simplelogin.io)
+}
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `type` | `'simple-login'` | Yes | Provider discriminator |
+| `apiKey` | `string` | Yes | SimpleLogin API key for authentication |
+| `apiUrl` | `string` | No | Custom API URL for self-hosted instances (default: `https://app.simplelogin.io`) |
+
+#### Getting Your API Key
+
+1. Login to your SimpleLogin account at [app.simplelogin.io](https://app.simplelogin.io)
+2. Go to the **API Keys** page in your account settings
+3. Click **Create a new API key**
+4. Copy the generated API key → use as `apiKey`
+
+#### Self-Hosted Instances
+
+If you're using a self-hosted SimpleLogin instance, set `apiUrl` to your server's base URL (e.g., `https://sl.example.com`).
+
+#### Usage Example
+
+```typescript
+import { TempMailClient } from '@z_06/relay-temp-mail';
+
+// Using SimpleLogin cloud service
+const client = new TempMailClient({
+  aliasProvider: {
+    type: 'simple-login',
+    apiKey: 'your-api-key',
+  },
+  mailProvider: { /* ... */ },
+});
+
+// Using a self-hosted SimpleLogin instance
+const client = new TempMailClient({
+  aliasProvider: {
+    type: 'simple-login',
+    apiKey: 'your-api-key',
+    apiUrl: 'https://sl.example.com',
+  },
+  mailProvider: { /* ... */ },
+});
+```
+
+---
+
 ## Mail Providers
 
 ### `cf-temp-mail`
