@@ -1,7 +1,11 @@
-import { CFTempMailProvider, DefaultHttpClient } from './cf-api.js';
+import { CFTempMailProvider } from './cf-api.js';
 import { EmailParser } from './parser.js';
 import { FirefoxRelayProvider } from './relay-api.js';
+import { SimpleLoginProvider } from './simplelogin-api.js';
+import { DuckDuckGoEmailProvider, InMemoryDuckDuckGoAliasStore } from './duckduckgo-api.js';
+import { GmailProvider } from './gmail-api.js';
 import { HttpClient } from './http.js';
+import { RelayTempMailError } from './errors.js';
 import type {
   TempMailConfig,
   RelayConfig,
@@ -21,6 +25,23 @@ function createAliasProvider(config: TempMailConfig, httpClient: HttpClient): Al
         aliasConfig.sessionId,
         httpClient
       );
+    case 'simplelogin':
+      return new SimpleLoginProvider(
+        aliasConfig.apiKey,
+        aliasConfig.apiUrl,
+        httpClient
+      );
+    case 'duckduckgo':
+      return new DuckDuckGoEmailProvider(
+        aliasConfig.jwtToken,
+        new InMemoryDuckDuckGoAliasStore(),
+        httpClient
+      );
+    default:
+      throw new RelayTempMailError(
+        `Unsupported alias provider type: ${(aliasConfig as any).type}`,
+        'INVALID_PROVIDER_TYPE'
+      );
   }
 }
 
@@ -31,6 +52,19 @@ function createMailProvider(config: TempMailConfig): MailProvider {
       return new CFTempMailProvider(
         mailConfig.apiUrl,
         mailConfig.token
+      );
+    case 'gmail':
+      return new GmailProvider({
+        userId: mailConfig.userId,
+        accessToken: mailConfig.accessToken,
+        clientId: mailConfig.clientId,
+        clientSecret: mailConfig.clientSecret,
+        refreshToken: mailConfig.refreshToken,
+      });
+    default:
+      throw new RelayTempMailError(
+        `Unsupported mail provider type: ${(mailConfig as any).type}`,
+        'INVALID_PROVIDER_TYPE'
       );
   }
 }
