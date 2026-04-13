@@ -2,16 +2,21 @@
 
 [English](README.md) | [中文](README.zh-CN.md)
 
-A TypeScript/JavaScript package for managing Firefox Relay email aliases and retrieving temporary emails via a CloudFlare temp email API.
+A modular TypeScript/JavaScript package for managing email aliases and retrieving temporary emails through pluggable providers.
+
+Built on a provider architecture. Combine any **alias provider** with any **mail provider** to fit your workflow. Currently ships with Firefox Relay, SimpleLogin, DuckDuckGo Email Protection, CloudFlare Temp Mail, and Gmail support.
 
 ## Features
 
-- **Create Firefox Relay aliases** - Generate new email aliases on demand
-- **List existing aliases** - View all your configured email aliases
-- **Get emails for specific aliases** - Fetch and parse emails sent to specific addresses
-- **Delete aliases** - Clean up unused aliases programmatically
-- **TypeScript support** - Full type definitions for all APIs
-- **ESM + CommonJS support** - Works with both module systems
+- **Provider-based architecture** — mix and match alias + mail providers
+- **Firefox Relay** — create, list, and delete email aliases
+- **SimpleLogin** — create, list, and delete email aliases
+- **DuckDuckGo Email Protection** — create email aliases with local storage
+- **CloudFlare Temp Mail** — retrieve and parse emails via API
+- **Gmail** — retrieve emails via Gmail API with OAuth2 support
+- **TypeScript support** — full type definitions for all APIs, including provider interfaces
+- **ESM + CommonJS support** — works with both module systems
+- **Extensible** — implement `AliasProvider` or `MailProvider` to add new services
 
 ## Installation
 
@@ -26,13 +31,19 @@ bun add @z_06/relay-temp-mail
 ## Quick Start
 
 ```typescript
-import { RelayClient } from '@z_06/relay-temp-mail';
+import { TempMailClient } from '@z_06/relay-temp-mail';
 
-const client = new RelayClient({
-  csrfToken: 'your-csrf-token',
-  sessionId: 'your-session-id',
-  cfApiUrl: 'https://your-cf-api.com',
-  cfToken: 'your-cf-token',
+const client = new TempMailClient({
+  aliasProvider: {
+    type: 'firefox-relay',
+    csrfToken: 'your-csrf-token',
+    sessionId: 'your-session-id',
+  },
+  mailProvider: {
+    type: 'cf-temp-mail',
+    apiUrl: 'https://your-cf-api.com',
+    token: 'your-cf-token',
+  },
 });
 
 // Create a new alias
@@ -46,66 +57,32 @@ const aliases = await client.listAliases();
 const emails = await client.getEmails(alias.fullAddress, { limit: 10 });
 ```
 
-## Configuration
+## Providers
 
-### Firefox Relay Tokens
+The library uses two types of providers that can be combined independently:
 
-To get your `csrfToken` and `sessionId`:
+| Provider Type | Interface | Available Providers |
+|---|---|---|
+| **Alias Provider** | `AliasProvider` | `firefox-relay`, `simplelogin`, `duckduckgo-email` |
+| **Mail Provider** | `MailProvider` | `cf-temp-mail`, `gmail` |
 
-1. Login to [relay.firefox.com](https://relay.firefox.com)
-2. Open your browser's developer tools (F12)
-3. Go to the Application/Storage tab
-4. Find Cookies for `relay.firefox.com`
-5. Copy the values for `csrftoken` and `sessionid`
+For detailed configuration parameters and credential acquisition guides, see **[Provider Setup Guide](PROVIDERS.md)**.
 
-### CF Temp Email
-
-本项目使�?[cloudflare_temp_email](https://github.com/dreamhunter2333/cloudflare_temp_email) 作为临时邮箱后端，你需要先部署该服务才能使用�?
-#### 快速部署步�?
-1. **Fork 仓库**
-   - 访问 [cloudflare_temp_email](https://github.com/dreamhunter2333/cloudflare_temp_email)
-   - 点击右上�?"Fork" 按钮，将仓库复制到你�?GitHub 账户
-
-2. **一键部署到 Cloudflare**
-   - 点击仓库 README 中的 "Deploy to Cloudflare Workers" 按钮
-   - 或参�?[部署文档](https://temp-mail-docs.awsl.uk) 进行手动部署
-
-3. **配置域名和邮件路�?*
-   - �?Cloudflare Dashboard 中添加你的域�?   - 配置 Email Routing（邮件路由）
-   - 创建 catch-all 规则将所有邮件转发到 Worker
-
-4. **获取 API 地址�?Token**
-   - 部署完成后，你的 API 地址格式为：`https://<你的worker名称>.<你的子域>.workers.dev`
-   - 登录前端界面（部署后会有 Pages 地址�?   - 在用户设置或 Admin 后台生成 API Token
-   - �?API 地址�?Token 填入 `RelayClient` 配置
-
-#### 获取 `cfApiUrl` �?`cfToken`
-
-```typescript
-const client = new RelayClient({
-  csrfToken: 'your-csrf-token',
-  sessionId: 'your-session-id',
-  cfApiUrl: 'https://your-worker-name.your-subdomain.workers.dev', // CF Worker API 地址
-  cfToken: 'your-api-token', // �?Admin 后台或用户设置中生成
-});
-```
-
-更多详细配置请参�?[cloudflare_temp_email 官方文档](https://temp-mail-docs.awsl.uk)�?
 ## API Documentation
 
-### RelayClient
+### TempMailClient
 
-The main class for interacting with both Firefox Relay and CloudFlare temp email services.
+Main client class. Accepts an `aliasProvider` and `mailProvider` configuration and exposes a unified interface.
 
-#### Constructor Options
+#### Constructor
 
 ```typescript
-interface RelayConfig {
-  csrfToken: string;    // Firefox Relay CSRF token
-  sessionId: string;    // Firefox Relay session ID
-  cfApiUrl: string;     // CloudFlare temp email API URL
-  cfToken: string;      // CloudFlare API token
-  timeout?: number;     // Request timeout in ms (default: 30000)
+new TempMailClient(config: TempMailConfig)
+
+interface TempMailConfig {
+  aliasProvider: AliasProviderConfig;  // Alias provider config (discriminated union)
+  mailProvider: MailProviderConfig;    // Mail provider config (discriminated union)
+  timeout?: number;                    // Request timeout in ms (default: 30000)
 }
 ```
 
@@ -113,7 +90,7 @@ interface RelayConfig {
 
 ##### `listAliases()`
 
-Lists all Firefox Relay email aliases.
+Lists all email aliases from the configured alias provider.
 
 ```typescript
 const aliases = await client.listAliases();
@@ -122,7 +99,7 @@ const aliases = await client.listAliases();
 
 ##### `createAlias()`
 
-Creates a new random Firefox Relay email alias.
+Creates a new email alias via the configured alias provider.
 
 ```typescript
 const alias = await client.createAlias();
@@ -140,7 +117,7 @@ await client.deleteAlias(12345);
 
 ##### `getEmails(aliasAddress?, options?)`
 
-Retrieves and parses emails from the CloudFlare temp email API. If `aliasAddress` is provided, only emails sent to that address are returned.
+Retrieves and parses emails from the configured mail provider. If `aliasAddress` is provided, only emails sent to that address are returned.
 
 ```typescript
 // Get all emails (up to default limit)
@@ -157,6 +134,28 @@ Options:
 
 - `limit` - Maximum number of emails to return (default: 20)
 - `offset` - Offset for pagination, 0-indexed (default: 0)
+
+## Custom Providers
+
+Implement the `AliasProvider` or `MailProvider` interface to add support for new services:
+
+```typescript
+import type { AliasProvider, RelayAlias } from '@z_06/relay-temp-mail';
+
+class MyAliasProvider implements AliasProvider {
+  async listAliases(): Promise<RelayAlias[]> { /* ... */ }
+  async createAlias(): Promise<RelayAlias> { /* ... */ }
+  async deleteAlias(id: number): Promise<void> { /* ... */ }
+}
+```
+
+```typescript
+import type { MailProvider, Email } from '@z_06/relay-temp-mail';
+
+class MyMailProvider implements MailProvider {
+  async getMails(limit: number, offset: number): Promise<Email[]> { /* ... */ }
+}
+```
 
 ## Error Handling
 
@@ -182,7 +181,7 @@ try {
   } else if (error instanceof RateLimitError) {
     console.error('Rate limited. Retry after:', error.response?.retryAfter);
   } else if (error instanceof RelayTempMailError) {
-    console.error('Relay error:', error.code, error.message);
+    console.error('Error:', error.code, error.message);
   }
 }
 ```
@@ -206,20 +205,64 @@ All error classes extend `RelayTempMailError` and provide:
 
 ## TypeScript
 
-All types are fully exported for use in your TypeScript projects:
+All types are fully exported, including the provider interfaces:
 
 ```typescript
 import type {
-  RelayConfig,
+  AliasProvider,
+  MailProvider,
+  TempMailConfig,
+  FirefoxRelayConfig,
+  SimpleLoginConfig,
+  DuckDuckGoConfig,
+  DuckDuckGoAliasStore,
+  CFTempMailConfig,
+  GmailConfig,
   RelayAlias,
   Email,
   ParsedEmail,
-  ListAliasesOptions,
   GetEmailsOptions,
 } from '@z_06/relay-temp-mail';
 ```
 
-The package is built with strict TypeScript settings and provides comprehensive type definitions for all APIs.
+## Migration from v1
+
+<details>
+<summary>v1 → v2 Migration Guide</summary>
+
+**`RelayClient` → `TempMailClient`**
+
+```typescript
+// v1 (deprecated)
+import { RelayClient } from '@z_06/relay-temp-mail';
+const client = new RelayClient({
+  csrfToken: '...',
+  sessionId: '...',
+  cfApiUrl: 'https://...',
+  cfToken: '...',
+});
+
+// v2
+import { TempMailClient } from '@z_06/relay-temp-mail';
+const client = new TempMailClient({
+  aliasProvider: {
+    type: 'firefox-relay',
+    csrfToken: '...',
+    sessionId: '...',
+  },
+  mailProvider: {
+    type: 'cf-temp-mail',
+    apiUrl: 'https://...',
+    token: '...',
+  },
+});
+```
+
+**`RelayAPIClient` → `FirefoxRelayProvider`**, **`CFEmailClient` → `CFTempMailProvider`**
+
+The old names are still exported as deprecated aliases. The method signatures are unchanged.
+
+</details>
 
 ## License
 
