@@ -76,12 +76,36 @@ export interface FirefoxRelayConfig {
 }
 
 /**
+ * Configuration for the SimpleLogin alias provider.
+ */
+export interface SimpleLoginConfig {
+  /** Discriminant identifying this provider type */
+  type: 'simplelogin';
+
+  /** API key for SimpleLogin API authentication */
+  apiKey: string;
+
+  /** Optional custom API URL */
+  apiUrl?: string;
+}
+
+/**
+ * Configuration for the DuckDuckGo alias provider.
+ */
+export interface DuckDuckGoConfig {
+  /** Discriminant identifying this provider type */
+  type: 'duckduckgo';
+
+  /** JWT token for DuckDuckGo Email Protection API authentication */
+  jwtToken: string;
+}
+
+/**
  * Union type for all supported alias provider configurations.
  *
- * Currently only supports 'firefox-relay'. More providers (simplelogin,
- * duckduckgo, etc.) can be added here in the future.
+ * Currently supports 'firefox-relay', 'simplelogin', and 'duckduckgo'.
  */
-export type AliasProviderConfig = FirefoxRelayConfig;
+export type AliasProviderConfig = FirefoxRelayConfig | SimpleLoginConfig | DuckDuckGoConfig;
 
 /**
  * Configuration for the CloudFlare temp mail provider.
@@ -98,12 +122,48 @@ export interface CFTempMailConfig {
 }
 
 /**
+ * Configuration for the Gmail mail provider.
+ */
+export interface GmailConfig {
+  /** Discriminant identifying this provider type */
+  type: 'gmail';
+
+  /** Optional user ID for the Gmail account */
+  userId?: string;
+
+  /** Optional access token for Gmail API authentication */
+  accessToken?: string;
+
+  /** Optional OAuth client ID */
+  clientId?: string;
+
+  /** Optional OAuth client secret */
+  clientSecret?: string;
+
+  /** Optional OAuth refresh token */
+  refreshToken?: string;
+}
+
+/**
  * Union type for all supported mail provider configurations.
  *
- * Currently only supports 'cf-temp-mail'. More providers (imap, pop3, etc.)
- * can be added here in the future.
+ * Currently supports 'cf-temp-mail' and 'gmail'.
  */
-export type MailProviderConfig = CFTempMailConfig;
+export type MailProviderConfig = CFTempMailConfig | GmailConfig;
+
+/**
+ * Interface for DuckDuckGo alias store operations.
+ */
+export interface DuckDuckGoAliasStore {
+  /** Retrieves all stored aliases */
+  getAll(): RelayAlias[];
+
+  /** Adds a new alias to the store */
+  add(alias: RelayAlias): void;
+
+  /** Removes an alias by its ID */
+  remove(id: number): void;
+}
 
 // ============================================================================
 // Client Configuration

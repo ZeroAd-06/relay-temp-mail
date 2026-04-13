@@ -19,9 +19,9 @@ interface CFRawResponse {
 export class CFTempMailProvider implements MailProvider {
   private readonly apiUrl: string;
   private readonly token: string;
-  private readonly httpClient: HttpClient;
+  private readonly httpClient: CFHttpClient;
 
-  constructor(apiUrl: string, token: string, httpClient?: HttpClient) {
+  constructor(apiUrl: string, token: string, httpClient?: CFHttpClient) {
     this.apiUrl = apiUrl.replace(/\/+$/, '');
     this.token = token;
     this.httpClient = httpClient ?? new DefaultHttpClient();
@@ -93,11 +93,11 @@ export class CFTempMailProvider implements MailProvider {
 /** @deprecated Use CFTempMailProvider instead */
 export const CFEmailClient = CFTempMailProvider;
 
-export interface HttpClient {
+export interface CFHttpClient {
   get(url: string, options?: { headers?: Record<string, string> }): Promise<unknown>;
 }
 
-export class DefaultHttpClient implements HttpClient {
+export class DefaultHttpClient implements CFHttpClient {
   async get(url: string, options?: { headers?: Record<string, string> }): Promise<unknown> {
     const response = await fetch(url, {
       method: 'GET',

@@ -15,6 +15,10 @@ export type {
   RelayAddressesResponse,
   CreateAliasResponse,
   RelayConfig,
+  SimpleLoginConfig,
+  DuckDuckGoConfig,
+  GmailConfig,
+  DuckDuckGoAliasStore,
 } from './types.js';
 
 export {
@@ -31,3 +35,9 @@ export { TempMailClient, RelayClient } from './client.js';
 export { FirefoxRelayProvider, RelayAPIClient } from './relay-api.js';
 
 export { CFTempMailProvider, CFEmailClient } from './cf-api.js';
+
+export { SimpleLoginProvider } from './simplelogin-api.js';
+
+export { DuckDuckGoEmailProvider, InMemoryDuckDuckGoAliasStore } from './duckduckgo-api.js';
+
+export { GmailProvider } from './gmail-api.js';

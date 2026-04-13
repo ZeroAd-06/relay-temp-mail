@@ -1,5 +1,5 @@
-import { HttpClient } from './http';
-import type { AliasProvider, RelayAlias } from './types';
+import { HttpClient } from './http.js';
+import type { AliasProvider, RelayAlias } from './types.js';
 
 interface RawAliasResponse {
   id: number;

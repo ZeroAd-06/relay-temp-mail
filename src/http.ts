@@ -11,7 +11,7 @@ import {
   AuthError,
   NotFoundError,
   RateLimitError,
-} from './errors';
+} from './errors.js';
 
 /**
  * Options for individual HTTP requests.

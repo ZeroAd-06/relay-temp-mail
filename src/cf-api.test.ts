@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { CFTempMailProvider, type HttpClient } from './cf-api';
+import { CFTempMailProvider, type CFHttpClient } from './cf-api';
 import { AuthError, NetworkError, NotFoundError, RateLimitError, RelayTempMailError } from './errors';
 
 describe('CFTempMailProvider', () => {
   const apiUrl = 'https://example.com';
   const token = 'test-token';
   let mockGet: Mock;
-  let mockHttpClient: HttpClient;
+  let mockHttpClient: CFHttpClient;
   let provider: CFTempMailProvider;
 
   beforeEach(() => {

@@ -1,6 +1,6 @@
-import { HttpClient } from './http';
-import { RelayTempMailError } from './errors';
-import type { AliasProvider, RelayAlias, DuckDuckGoAliasStore } from './types';
+import { HttpClient } from './http.js';
+import { RelayTempMailError } from './errors.js';
+import type { AliasProvider, RelayAlias, DuckDuckGoAliasStore } from './types.js';
 
 interface DuckDuckGoCreateAddressResponse {
   address: string;
