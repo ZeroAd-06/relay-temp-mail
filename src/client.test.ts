@@ -297,8 +297,7 @@ describe('TempMailClient', () => {
 
       expect(FirefoxRelayProvider).toHaveBeenCalledWith(
         'csrf-token',
-        'session-id',
-        expect.anything()
+        'session-id'
       );
     });
 

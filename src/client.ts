@@ -16,26 +16,23 @@ import type {
   GetEmailsOptions,
 } from './types.js';
 
-function createAliasProvider(config: TempMailConfig, httpClient: HttpClient): AliasProvider {
+function createAliasProvider(config: TempMailConfig): AliasProvider {
   const aliasConfig = config.aliasProvider;
   switch (aliasConfig.type) {
     case 'firefox-relay':
       return new FirefoxRelayProvider(
         aliasConfig.csrfToken,
-        aliasConfig.sessionId,
-        httpClient
+        aliasConfig.sessionId
       );
     case 'simplelogin':
       return new SimpleLoginProvider(
         aliasConfig.apiKey,
-        aliasConfig.apiUrl,
-        httpClient
+        aliasConfig.apiUrl
       );
     case 'duckduckgo':
       return new DuckDuckGoEmailProvider(
         aliasConfig.jwtToken,
-        new InMemoryDuckDuckGoAliasStore(),
-        httpClient
+        new InMemoryDuckDuckGoAliasStore()
       );
     default:
       throw new RelayTempMailError(
@@ -75,9 +72,7 @@ export class TempMailClient {
   private readonly parser: EmailParser;
 
   constructor(config: TempMailConfig) {
-    const timeout = config.timeout ?? 30000;
-    const httpClient = new HttpClient('https://relay.firefox.com', timeout);
-    this.aliasProvider = createAliasProvider(config, httpClient);
+    this.aliasProvider = createAliasProvider(config);
     this.mailProvider = createMailProvider(config);
     this.parser = new EmailParser();
   }

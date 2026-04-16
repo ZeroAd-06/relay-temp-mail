@@ -20,11 +20,13 @@ interface ListAliasesResponse {
 
 export class SimpleLoginProvider implements AliasProvider {
   private apiKey: string;
+  private apiUrl: string;
   private httpClient: HttpClient;
 
   constructor(apiKey: string, apiUrl?: string, httpClient?: HttpClient) {
     this.apiKey = apiKey;
-    this.httpClient = httpClient ?? new HttpClient(apiUrl ?? 'https://app.simplelogin.io');
+    this.apiUrl = apiUrl ?? 'https://app.simplelogin.io';
+    this.httpClient = httpClient ?? new HttpClient(this.apiUrl);
   }
 
   private getAuthHeaders(): Record<string, string> {
