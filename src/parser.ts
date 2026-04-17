@@ -5,6 +5,7 @@ import type { ParsedEmail } from './types.js';
 
 const EMAIL_PATTERN = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const MOZMAIL_SUFFIX_PATTERN = /@mozmail\.com$/i;
+const DUCK_SUFFIX_PATTERN = /@duck\.com$/i;
 const ENCODED_WORD_PATTERN = /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g;
 
 /**
@@ -41,6 +42,11 @@ export class EmailParser {
         MOZMAIL_SUFFIX_PATTERN.test(address)
       );
       if (mozmailAddress) return mozmailAddress;
+
+      const duckAddress = allAddresses.find((address) =>
+        DUCK_SUFFIX_PATTERN.test(address)
+      );
+      if (duckAddress) return duckAddress;
 
       return toAddresses[0] ?? null;
     } catch {

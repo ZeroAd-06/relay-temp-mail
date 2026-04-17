@@ -44,6 +44,31 @@ Body`;
       expect(alias).toBe('recipient@other.com');
     });
 
+    it('finds duck.com address in To header', () => {
+      const raw = `From: sender@example.com
+To: unlaced-fled-qualm@duck.com
+Subject: Test Email
+Message-Id: <abc123@example.com>
+Date: Fri, 03 Apr 2026 17:12:55 +0000
+
+Test email body`;
+
+      const alias = parser.extractRelayAlias(raw);
+      expect(alias).toBe('unlaced-fled-qualm@duck.com');
+    });
+
+    it('prefers mozmail alias over duck.com alias', () => {
+      const raw = `From: sender@example.com
+To: t1ou9gl4l@mozmail.com
+Cc: unlaced-fled-qualm@duck.com
+Subject: Test Email
+
+Test email body`;
+
+      const alias = parser.extractRelayAlias(raw);
+      expect(alias).toBe('t1ou9gl4l@mozmail.com');
+    });
+
     it('handles quoted-printable encoding in To header', () => {
       const raw = `From: sender@example.com
 To: =?UTF-8?Q?t1ou9gl4l@mozmail=2Ecom?=
