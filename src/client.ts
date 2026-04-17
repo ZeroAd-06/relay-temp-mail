@@ -113,10 +113,12 @@ export class TempMailClient {
 
     if (aliasAddress) {
       const normalizedAlias = aliasAddress.toLowerCase();
+      const aliasPrefix = normalizedAlias.split('@')[0];
       return parsedEmails.filter(
         (email) =>
           email.relayAlias?.toLowerCase() === normalizedAlias ||
-          email.address.toLowerCase() === normalizedAlias
+          email.address.toLowerCase() === normalizedAlias ||
+          (aliasPrefix && email.raw.toLowerCase().includes(aliasPrefix))
       );
     }
 

@@ -48,6 +48,15 @@ export class EmailParser {
       );
       if (duckAddress) return duckAddress;
 
+      const originalFrom = headers.get('x-simplelogin-original-from');
+      if (originalFrom) {
+        const originalEmails = this.extractHeaderEmails(originalFrom);
+        const duckInOriginal = originalEmails.find((address) =>
+          DUCK_SUFFIX_PATTERN.test(address)
+        );
+        if (duckInOriginal) return duckInOriginal;
+      }
+
       return toAddresses[0] ?? null;
     } catch {
       return null;
