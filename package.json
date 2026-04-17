@@ -1,6 +1,6 @@
 {
   "name": "@z_06/relay-temp-mail",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "type": "module",
   "description": "TypeScript npm package for Firefox Relay + CF temp email API",
   "main": "./dist/index.cjs",
